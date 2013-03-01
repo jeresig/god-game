@@ -48,7 +48,7 @@ var setupGUI = function(parent) {
 	gui.add(parent, "REPEL", -5, 0);
 	gui.add(parent, "CHILD_AGE", 5, 1000);
 	gui.add(parent, "DEATH_AGE", 0, 20000);
-	gui.add(parent, "ATTRACTOR_DEATH_AGE", 0, 20000);
+	gui.add(parent, "ATTRACTOR_DEATH_AGE", 0, 5000);
 	gui.add(parent, "LAST_BREED", 100, 3000);
 	gui.add(parent, "LAST_MOVE", 20, 100);
 	gui.add(parent, "DRAW_ATTRACTORS");
@@ -404,7 +404,7 @@ window.onload = function() {
 	var loadedImage = loadImage("mandrill.png");
 
 	new Attractor(color(0, 0, 0), 100, 100, ATTRACT);
-	new Attractor(color(0, 0, 0), 20, 20, ATTRACT);
+	new Attractor(color(255, 0, 0), 20, 20, ATTRACT);
 	new Attractor(color(0, 0, 0), 170, 150, ATTRACT);
 
 	// new Attractor(color(0, 0, 0), 100, 80, REPEL);
@@ -426,7 +426,7 @@ window.onload = function() {
 	initAgents();
 
 	var PIXEL_CHECK = 10000;
-	
+
 	var curPos = 0;
 	var score = 0;
 	var scores = {};
