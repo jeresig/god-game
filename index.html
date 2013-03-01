@@ -1,14 +1,24 @@
 
 <style type="text/css">
+	body {
+		font-family: "Helvetica Neue", Arial, Helvetica, sans-serif;
+	}
 	canvas {
 		outline: none;
 		border: 2px solid #000;
 	}
+	#score {
+		font-weight: bold;
+		color: #ed145b;
+	}
 </style>
 <canvas id="canvas" width="400" height="400"></canvas>
+<img src="mandrill.jpg">
+<p>Score: <span id = "score">0</span></p>
 <script src="processing-1.4.1.js"></script>
 <script src="http://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.5/dat.gui.min.js"></script>
 <script>
+var d = 400;
 var BREED = 0.05;
 var ATTRACTOR_RADIUS = 30;
 var ATTRACT = 0.1;
@@ -22,6 +32,9 @@ var LAST_MOVE = 30;
 var grid = [];
 var agents = [];
 var attractors = [];
+
+var imageData;
+var scoreSpan = document.getElementById("score");
 
 var setupGUI = function(parent) {
 	var gui = new dat.GUI();
@@ -42,6 +55,9 @@ window.onload = function() {
 
 	with(sketch) {
 
+	var image = loadImage("mandrill.jpg");
+	image.loadPixels();
+	imageData = image.pixels;
 	var directions = [
 		{ x: -1, y: -1 },
 		{ x: 0, y: -1 },
@@ -240,7 +256,7 @@ window.onload = function() {
 							weights[1] += yWeight;
 							weights[2] += yWeight;
 						}
-						
+
 						match = true;
 					} else {
 						nearest = Math.min(nearest, dist_agent);
@@ -268,7 +284,7 @@ window.onload = function() {
 			var cutoff = random(totalWeight);
 			var sumWeight = 0;
 			var dir = 0;
-			
+
 			for (var i = 0, l = weights.length; i < l; i++) {
 				sumWeight += weights[i];
 
@@ -328,6 +344,8 @@ window.onload = function() {
 	};
 
 	Attractor.prototype = {
+		lastFrame: -1,
+		_weight: 1,
 		width: 4,
 		height: 4,
 
@@ -344,9 +362,13 @@ window.onload = function() {
 		},
 
 		weight: function() {
-			return ATTRACTOR_DEATH_AGE <= 0 ?
-				1 :
-				((ATTRACTOR_DEATH_AGE - this.age) / ATTRACTOR_DEATH_AGE);
+			if (this.lastFrame < frameCount) {
+				this._weight = ATTRACTOR_DEATH_AGE <= 0 ?
+								1 :
+								((ATTRACTOR_DEATH_AGE - this.age) / ATTRACTOR_DEATH_AGE);
+				this.lastFrame = frameCount;
+			}
+			return this._weight;
 		},
 
 		draw: function() {
@@ -375,8 +397,30 @@ window.onload = function() {
 	new Attractor(color(0, 0, 0), 200, 200, ATTRACT);
 	new Attractor(color(0, 0, 0), 200, 160, REPEL);
 
+	compareImage = function() {
+		if (!(frameCount % 120) == 0) {
+			return;
+		}
+		var n = d * d;
+		var score = 0;
+		for (var i = 0; i < d; i++) {
+			for (var j = 0; j < d; j++) {
+				var k = i + j * d;
+				var srcPixel = red(imageData[k]);
+				var hit = atPixel(i, j);
+				if (!hit && srcPixel == 255) {
+					score++;
+				} else if (hit && red(hit.color) == srcPixel) {
+					score++;
+				}
+			}
+		}
+		scoreSpan.innerHTML = (100 * score/n).toFixed(1) + "%";
+
+	},
 	draw = function() {
 		background(255, 255, 255);
+		compareImage();
 
 		for (var i = 0, l = attractors.length; i < l; i++) {
 			attractors[i].draw();
