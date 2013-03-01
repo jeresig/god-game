@@ -1,13 +1,20 @@
 
 <style type="text/css">
+	body {
+		font-family: "Helvetica Neue", Arial, Helvetica, sans-serif;
+	}
 	canvas {
 		outline: none;
 		border: 2px solid #000;
 	}
+	#score {
+		font-weight: bold;
+		color: #ed145b;
+	}
 </style>
 <canvas id="canvas" width="400" height="400"></canvas>
 <img src="mandrill.jpg">
-<p>Match: <span id = "match">0</span></p>
+<p>Score: <span id = "score">0</span></p>
 <script src="processing-1.4.1.js"></script>
 <script src="http://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.5/dat.gui.min.js"></script>
 <script>
@@ -27,6 +34,7 @@ var agents = [];
 var attractors = [];
 
 var imageData;
+var scoreSpan = document.getElementById("score");
 
 var setupGUI = function(parent) {
 	var gui = new dat.GUI();
@@ -40,14 +48,6 @@ var setupGUI = function(parent) {
 	gui.add(parent, "LAST_BREED", 100, 3000);
 	gui.add(parent, "LAST_MOVE", 20, 100);
 }
-// var getImageData =function() {
-// 	var img = document.getElementsByTagName("img")[0];
-// 	var tempCanvas = document.createElement("canvas");
-// 	var context = tempCanvas.getContext("2d");
-// 	context.drawImage(img, 0, 0);
-// 	imageData = context.getImageData(0, 0, d, d).data;
-// 	console.log("Got image data");
-// };
 
 window.onload = function() {
 	setupGUI(this);
@@ -396,10 +396,6 @@ window.onload = function() {
 		if (!(frameCount % 120) == 0) {
 			return;
 		}
-		if (!imageData) {
-			console.log("Image not loaded");
-			return;
-		}
 		var n = d * d;
 		var score = 0;
 		for (var i = 0; i < d; i++) {
@@ -414,7 +410,8 @@ window.onload = function() {
 				}
 			}
 		}
-		console.log("Score ", score/n);
+		scoreSpan.innerHTML = (100 * score/n).toFixed(1) + "%";
+
 	},
 	draw = function() {
 		background(255, 255, 255);
