@@ -11,7 +11,7 @@
 var BREED = 0.05;
 var ATTRACTOR_RADIUS = 80;
 var ATTRACT = 0.1;
-var REPEL = 0.05;
+var REPEL = -0.05;
 var CHILD_AGE = 100;
 var DEATH_AGE = 0;
 var ATTRACTOR_DEATH_AGE = 10000;
@@ -174,13 +174,14 @@ window.onload = function() {
 			var weights = [1, 1, 1, 1, 1, 1, 1, 1];
 			var agent = this;
 
-			attractors.forEach(function(attractor) {
+			for (var i = 0, l = attractors.length; i < l; i++) {
+				var attractor = attractors[i];
 				if (attractor.color === agent.color) {
 					var dist_agent = dist(agent.x, agent.y, attractor.x, attractor.y);
 					if (dist_agent < ATTRACTOR_RADIUS) {
 						var diffX = attractor.x - agent.x;
 						var diffY = attractor.y - agent.y;
-						var weight = ATTRACTOR_RADIUS * (1 / ATTRACT) *
+						var weight = ATTRACTOR_RADIUS * (1 / attractor.strength) *
 							attractor.weight();
 						var xWeight = (ATTRACTOR_RADIUS - diffX) / weight;
 						var yWeight = (ATTRACTOR_RADIUS - diffY) / weight;
@@ -206,19 +207,19 @@ window.onload = function() {
 						}
 					}
 				}
-			});
+			}
 
 			var totalWeight = 0;
 
-			weights.forEach(function(weight) {
-				totalWeight += weight;
-			});
+			for (var i = 0, l = weights.length; i < l; i++) {
+				totalWeight += weights[i];
+			}
 
 			var cutoff = random(totalWeight);
 			var sumWeight = 0;
 			var dir = 0;
 			
-			for (var i = 0; i < weights.length; i++) {
+			for (var i = 0, l = weights.length; i < l; i++) {
 				sumWeight += weights[i];
 				
 				if (cutoff < sumWeight) {
@@ -252,21 +253,23 @@ window.onload = function() {
 		draw: function() {
 			if (this.isDead() || this.isInfertile() || this.isStagnant()) {
 				if (this.isInfertile()) {
-					console.log("DEATH: INFERTILE");
+					//console.log("DEATH: INFERTILE");
 				} else if (this.isStagnant()) {
-					console.log("DEATH: STAGNANT");
+					//console.log("DEATH: STAGNANT");
 				}
 				this.kill();
 				return;
 			}
 
-			noStroke();
+			//noStroke();
 			if (this.isChild()) {
-				fill(this.color, 128);
+				set(this.x, this.y, this.color);
+				//fill(this.color, 128);
 			} else {
-				fill(this.color);
+				//fill(this.color, 128);
+				set(this.x, this.y, this.color);
 			}
-			ellipse(this.x, this.y, this.width, this.height);
+			//rect(this.x, this.y, this.width, this.height);
 
 			this.age += 1;
 			this.lastBreed += 1;
@@ -326,8 +329,8 @@ window.onload = function() {
 
 	size(400, 400);
 
-	new Attractor(color(0, 0, 0), 200, 200);
-	new Attractor(color(0, 0, 0), 200, 160);
+	new Attractor(color(0, 0, 0), 200, 200, ATTRACT);
+	new Attractor(color(0, 0, 0), 200, 160, REPEL);
 
 	draw = function() {
 		background(255, 255, 255);
