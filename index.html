@@ -470,7 +470,9 @@ window.onload = function() {
 		compareImage();
 		if (DRAW_ATTRACTORS) {
 			for (var i = 0, l = attractors.length; i < l; i++) {
-				attractors[i].draw();
+				if (attractors[i]) {
+					attractors[i].draw();
+				}
 			}
 		}
 
