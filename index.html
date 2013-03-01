@@ -40,13 +40,14 @@ var setupGUI = function(parent) {
 	gui.add(parent, "LAST_BREED", 100, 3000);
 	gui.add(parent, "LAST_MOVE", 20, 100);
 }
-var getImageData =function() {
-	var img = document.getElementsByTagName("img")[0];
-	var tempCanvas = document.createElement("canvas");
-	var context = tempCanvas.getContext("2d");
-	context.drawImage(img, 0, 0);
-	imageData = context.getImageData(0, 0, d, d).data;
-};
+// var getImageData =function() {
+// 	var img = document.getElementsByTagName("img")[0];
+// 	var tempCanvas = document.createElement("canvas");
+// 	var context = tempCanvas.getContext("2d");
+// 	context.drawImage(img, 0, 0);
+// 	imageData = context.getImageData(0, 0, d, d).data;
+// 	console.log("Got image data");
+// };
 
 window.onload = function() {
 	setupGUI(this);
@@ -54,6 +55,9 @@ window.onload = function() {
 
 	with(sketch) {
 
+	var image = loadImage("mandrill.jpg");
+	image.loadPixels();
+	imageData = image.pixels;
 	var directions = [
 		{ x: -1, y: -1 },
 		{ x: 0, y: -1 },
@@ -397,21 +401,16 @@ window.onload = function() {
 			return;
 		}
 		var n = d * d;
-		var stride = d * 4;
 		var score = 0;
 		for (var i = 0; i < d; i++) {
 			for (var j = 0; j < d; j++) {
-				var k = i + j * stride;
-				var srcPixel = imageData.data[k];
+				var k = i + j * d;
+				var srcPixel = red(imageData[k]);
 				var hit = atPixel(i, j);
-				// if (!hit && (srcPixel == 255)) {
-				// 	score++;
-				// } else
-				if (hit && red(hit.color) == srcPixel) {
+				if (!hit && srcPixel == 255) {
 					score++;
-				} else if (srcPixel != 255){
-
-
+				} else if (hit && red(hit.color) == srcPixel) {
+					score++;
 				}
 			}
 		}
