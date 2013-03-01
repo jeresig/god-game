@@ -1,4 +1,10 @@
 
+<style type="text/css">
+	canvas {
+		outline: none;
+		border: 2px solid #000;
+	}
+</style>
 <canvas id="canvas" width="400" height="400"></canvas>
 <script src="processing-1.4.1.js"></script>
 <script>
@@ -42,7 +48,7 @@ window.onload = function() {
 		this.x = x;
 		this.y = y;
 	};
-	
+
 	Agent.prototype = {
 		move: function() {
 			// Add in attactor weights
@@ -152,7 +158,7 @@ window.onload = function() {
 		},
 
 		breed: function() {
-			
+
 			var dir = directions[floor(random(directions.length))];
 			var childX = this.x + dir.x;
 			var childY = this.y + dir.y
@@ -212,8 +218,6 @@ window.onload = function() {
 			agent.move();
 			agent.draw();
 		});
-
-
 	};
 
 	mousePressed = function() {
