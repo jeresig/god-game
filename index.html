@@ -8,15 +8,20 @@
 <canvas id="canvas" width="400" height="400"></canvas>
 <script src="processing-1.4.1.js"></script>
 <script>
+var BREED = 0.05;
+var ATTRACTOR_RADIUS = 80;
+var ATTRACT = 0.1;
+var REPEL = 0.05;
+var CHILD_AGE = 100;
+var DEATH_AGE = 0;
+var ATTRACTOR_DEATH_AGE = 0;
+var LAST_BREED = 3000;
+var LAST_MOVE = 50;
+
 window.onload = function() {
 	var sketch = new Processing("canvas");
 
 	with(sketch) {
-
-	var BREED = 0.05;
-	var ATTRACTOR_RADIUS = 80;
-	var ATTRACT = 0.1;
-	var REPEL = 0.05;
 
 	var directions = [
 		{ x: -1, y: -1 },
@@ -33,6 +38,8 @@ window.onload = function() {
 	];
 
 	var grid = [];
+	var agents = [];
+	var attractors = [];
 
 	var atGrid = function(obj) {
 		var startX = obj.x - floor(obj.width / 2);
@@ -84,30 +91,49 @@ window.onload = function() {
 		}
 	};
 
-	var agents = [];
-	var attractors = [];
-
-	var addAgent = function(color, x, y) {
-		var agent = new Agent(color, x, y);
-		if (!atGrid(agent)) {
-			addGrid(agent);
-			agents.push(agent);
-		}
-	};
-
 	var Agent = function(color, x, y) {
 		this.color = color;
 		this.x = x;
 		this.y = y;
+		this.age = 0;
+		this.lastBreed = 0;
+		this.lastMove = 0;
+		
+		if (!atGrid(this)) {
+			addGrid(this);
+			agents.push(this);
+		}
 	};
 
 	Agent.prototype = {
 		width: 2,
 		height: 2,
 
-		move: function() {
-			// Add in attactor weights
+		isChild: function() {
+			return this.age < CHILD_AGE;
+		},
 
+		isDead: function() {
+			return DEATH_AGE > 0 && this.age > DEATH_AGE;
+		},
+
+		isInfertile: function() {
+			return LAST_BREED > 0 && this.lastBreed > LAST_BREED;
+		},
+
+		isStagnant: function() {
+			return LAST_MOVE > 0 && this.lastMove > LAST_MOVE;
+		},
+
+		kill: function() {
+			removeGrid(this);
+
+			// Remove agent from the list
+			var pos = agents.indexOf(this);
+			agents.splice(pos, 1);
+		},
+
+		move: function() {
 			var originalX = this.x;
 			var originalY = this.y;
 
@@ -133,12 +159,14 @@ window.onload = function() {
 			if (!obj) {
 				removeGrid(this, originalX, originalY);
 				addGrid(this);
+				this.lastMove = 0;
 
 			} else {
 				// Handle Collision
 				this.collision(obj);
 				this.x = originalX;
 				this.y = originalY;
+				this.lastMove += 1;
 			}
 		},
 
@@ -203,7 +231,8 @@ window.onload = function() {
 
 		collision: function(other) {
 			//console.log("Collision", other);
-			if (other.color === this.color && other instanceof Agent) {
+			if (other.color === this.color && other instanceof Agent &&
+					!this.isChild() && !other.isChild()) {
 				// Breed!
 				if (random(1) < BREED) {
 					this.breed();
@@ -212,24 +241,29 @@ window.onload = function() {
 		},
 
 		breed: function() {
+			this.lastBreed = 0;
 			var dir = directions[floor(random(directions.length))];
 			var childX = this.x + (dir.x * this.width);
 			var childY = this.y + (dir.y * this.height);
-			addAgent(color(255, 0, 0), childX, childY);
+			new Agent(this.color, childX, childY);
 		},
 
 		draw: function() {
-			noStroke();
-			fill(this.color);
-			ellipse(this.x, this.y, this.width, this.height);
-		}
-	};
+			if (this.isDead() || this.isInfertile() || this.isStagnant()) {
+				this.kill();
+				return;
+			}
 
-	var addAttractor = function(color, x, y, strength) {
-		var attractor = new Attractor(color, x, y, strength);
-		if (!atGrid(attractor)) {
-			addGrid(attractor);
-			attractors.push(attractor);
+			noStroke();
+			if (this.isChild()) {
+				fill(this.color, 128);
+			} else {
+				fill(this.color);
+			}
+			ellipse(this.x, this.y, this.width, this.height);
+
+			this.age += 1;
+			this.lastBreed += 1;
 		}
 	};
 
@@ -238,25 +272,50 @@ window.onload = function() {
 		this.x = x;
 		this.y = y;
 		this.strength = strength;
+		this.age = 0;
+		
+		if (!atGrid(this)) {
+			addGrid(this);
+			attractors.push(this);
+		}
 	};
 
 	Attractor.prototype = {
 		width: 8,
 		height: 8,
 
+		isDead: function() {
+			return ATTRACTOR_DEATH_AGE > 0 && this.age > ATTRACTOR_DEATH_AGE;
+		},
+
+		kill: function() {
+			removeGrid(this);
+
+			// Remove agent from the list
+			var pos = attractors.indexOf(this);
+			attractors.splice(pos, 1);
+		},
+
 		draw: function() {
-			stroke(0, 0, 0);
-			fill(this.color, 0.1);
+			if (this.isDead()) {
+				this.kill();
+				return;
+			}
+
+			this.age += 1;
+
+			stroke(0, 0, 0, 42);
+			fill(this.color, 42);
 			ellipse(this.x, this.y, ATTRACTOR_RADIUS, ATTRACTOR_RADIUS);
-			fill(this.color);
+			fill(this.color, 128);
 			ellipse(this.x, this.y, this.width, this.height);
 		},
 	};
 
 	size(400, 400);
 
-	addAttractor(color(0, 0, 0), 200, 200);
-	addAttractor(color(0, 0, 0), 200, 160);
+	new Attractor(color(0, 0, 0), 200, 200);
+	new Attractor(color(0, 0, 0), 200, 160);
 
 	draw = function() {
 		background(255, 255, 255);
@@ -272,7 +331,7 @@ window.onload = function() {
 	};
 
 	mousePressed = function() {
-		addAgent(color(0, 0, 0), mouseX, mouseY);
+		new Agent(color(0, 0, 0), mouseX, mouseY);
 	};
 
 	sketch.loop();
