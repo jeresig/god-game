@@ -6,9 +6,12 @@
 	}
 </style>
 <canvas id="canvas" width="400" height="400"></canvas>
+<img src="mandrill.jpg">
+<p>Match: <span id = "match">0</span></p>
 <script src="processing-1.4.1.js"></script>
 <script src="http://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.5/dat.gui.min.js"></script>
 <script>
+var d = 400;
 var BREED = 0.05;
 var ATTRACTOR_RADIUS = 80;
 var ATTRACT = 0.1;
@@ -23,6 +26,8 @@ var grid = [];
 var agents = [];
 var attractors = [];
 
+var imageData;
+
 var setupGUI = function(parent) {
 	var gui = new dat.GUI();
 	gui.add(parent, "BREED", 0, 1);
@@ -35,6 +40,13 @@ var setupGUI = function(parent) {
 	gui.add(parent, "LAST_BREED", 100, 3000);
 	gui.add(parent, "LAST_MOVE", 20, 100);
 }
+var getImageData =function() {
+	var img = document.getElementsByTagName("img")[0];
+	var tempCanvas = document.createElement("canvas");
+	var context = tempCanvas.getContext("2d");
+	context.drawImage(img, 0, 0);
+	imageData = context.getImageData(0, 0, d, d).data;
+};
 
 window.onload = function() {
 	setupGUI(this);
@@ -55,7 +67,9 @@ window.onload = function() {
 		{ x: 0, y: 1 },
 		{ x: 1, y: 1 }
 	];
-
+	var atPixel  = function(x, y) {
+		return grid[(x * width) + y];
+	};
 	var atGrid = function(obj) {
 		var startX = obj.x - floor(obj.width / 2);
 		var endX = obj.x + floor(obj.width / 2);
@@ -304,6 +318,8 @@ window.onload = function() {
 	Attractor.prototype = {
 		width: 8,
 		height: 8,
+		lastFrame: -1,
+		_weight: 1,
 
 		isDead: function() {
 			return ATTRACTOR_DEATH_AGE > 0 && this.age > ATTRACTOR_DEATH_AGE;
@@ -318,9 +334,13 @@ window.onload = function() {
 		},
 
 		weight: function() {
-			return ATTRACTOR_DEATH_AGE <= 0 ?
-				1 :
-				((ATTRACTOR_DEATH_AGE - this.age) / ATTRACTOR_DEATH_AGE);
+			if (this.lastFrame < frameCount) {
+				this._weight = ATTRACTOR_DEATH_AGE <= 0 ?
+								1 :
+								((ATTRACTOR_DEATH_AGE - this.age) / ATTRACTOR_DEATH_AGE);
+				this.lastFrame = frameCount;
+			}
+			return this._weight;
 		},
 
 		draw: function() {
@@ -340,12 +360,40 @@ window.onload = function() {
 	};
 
 	size(400, 400);
+	new Attractor(color(0, 0, 0), 100, 200);
+	new Attractor(color(0, 0, 0), 300, 200);
 
-	new Attractor(color(0, 0, 0), 200, 200);
-	new Attractor(color(0, 0, 0), 200, 160);
+	compareImage = function() {
+		if (!(frameCount % 120) == 0) {
+			return;
+		}
+		if (!imageData) {
+			console.log("Image not loaded");
+			return;
+		}
+		var n = d * d;
+		var stride = d * 4;
+		var score = 0;
+		for (var i = 0; i < d; i++) {
+			for (var j = 0; j < d; j++) {
+				var k = i + j * stride;
+				var srcPixel = imageData.data[k];
+				var hit = atPixel(i, j);
+				// if (!hit && (srcPixel == 255)) {
+				// 	score++;
+				// } else
+				if (hit && red(hit.color) == srcPixel) {
+					score++;
+				} else if (srcPixel != 255){
 
+				}
+			}
+		}
+		console.log("Score ", score/n);
+	},
 	draw = function() {
 		background(255, 255, 255);
+		compareImage();
 
 		attractors.forEach(function(attractor) {
 			attractor.draw();
