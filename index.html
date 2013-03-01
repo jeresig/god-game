@@ -14,9 +14,13 @@ var ATTRACT = 0.1;
 var REPEL = 0.05;
 var CHILD_AGE = 100;
 var DEATH_AGE = 0;
-var ATTRACTOR_DEATH_AGE = 0;
+var ATTRACTOR_DEATH_AGE = 10000;
 var LAST_BREED = 3000;
-var LAST_MOVE = 50;
+var LAST_MOVE = 30;
+
+var grid = [];
+var agents = [];
+var attractors = [];
 
 window.onload = function() {
 	var sketch = new Processing("canvas");
@@ -36,10 +40,6 @@ window.onload = function() {
 		{ x: 0, y: 1 },
 		{ x: 1, y: 1 }
 	];
-
-	var grid = [];
-	var agents = [];
-	var attractors = [];
 
 	var atGrid = function(obj) {
 		var startX = obj.x - floor(obj.width / 2);
@@ -180,7 +180,8 @@ window.onload = function() {
 					if (dist_agent < ATTRACTOR_RADIUS) {
 						var diffX = attractor.x - agent.x;
 						var diffY = attractor.y - agent.y;
-						var weight = ATTRACTOR_RADIUS * (1 / ATTRACT);
+						var weight = ATTRACTOR_RADIUS * (1 / ATTRACT) *
+							attractor.weight();
 						var xWeight = (ATTRACTOR_RADIUS - diffX) / weight;
 						var yWeight = (ATTRACTOR_RADIUS - diffY) / weight;
 						
@@ -215,7 +216,7 @@ window.onload = function() {
 
 			var cutoff = random(totalWeight);
 			var sumWeight = 0;
-			var dir;
+			var dir = 0;
 			
 			for (var i = 0; i < weights.length; i++) {
 				sumWeight += weights[i];
@@ -250,6 +251,11 @@ window.onload = function() {
 
 		draw: function() {
 			if (this.isDead() || this.isInfertile() || this.isStagnant()) {
+				if (this.isInfertile()) {
+					console.log("DEATH: INFERTILE");
+				} else if (this.isStagnant()) {
+					console.log("DEATH: STAGNANT");
+				}
 				this.kill();
 				return;
 			}
@@ -296,6 +302,12 @@ window.onload = function() {
 			attractors.splice(pos, 1);
 		},
 
+		weight: function() {
+			return ATTRACTOR_DEATH_AGE <= 0 ?
+				1 :
+				((ATTRACTOR_DEATH_AGE - this.age) / ATTRACTOR_DEATH_AGE);
+		},
+
 		draw: function() {
 			if (this.isDead()) {
 				this.kill();
@@ -305,9 +317,9 @@ window.onload = function() {
 			this.age += 1;
 
 			stroke(0, 0, 0, 42);
-			fill(this.color, 42);
+			fill(this.color, 42 * this.weight());
 			ellipse(this.x, this.y, ATTRACTOR_RADIUS, ATTRACTOR_RADIUS);
-			fill(this.color, 128);
+			fill(this.color, 128 * this.weight());
 			ellipse(this.x, this.y, this.width, this.height);
 		},
 	};
