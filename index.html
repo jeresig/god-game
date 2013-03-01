@@ -410,7 +410,11 @@ window.onload = function() {
 		for (var i = 0; i < d; i++) {
 			for (var j = 0; j < d; j++) {
 				if (random(1) < INITIAL_AGENTS) {
-					new Agent(color(0, 0, 0), i, j);
+					if (random(1) > .5) {
+						new Agent(color(0, 0, 0), i, j);
+					} else {
+						new Agent(color(255, 0, 0), i, j);
+					}
 
 				}
 			}
