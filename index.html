@@ -12,23 +12,25 @@
 		color: #ed145b;
 	}
 </style>
-<canvas id="canvas" width="400" height="400"></canvas>
-<img src="mandrill.jpg">
+<canvas id="canvas" width="200" height="200"></canvas>
+<img src="mandrill.png">
 <p>Score: <span id = "score">0</span></p>
 <script src="processing-1.4.1.js"></script>
 <script src="http://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.5/dat.gui.min.js"></script>
 <script>
-var d = 400;
-var BREED = 0.05;
+var d = 200;
+var BREED = .05;
 var ATTRACTOR_RADIUS = 30;
 var ATTRACT = 0.1;
-var REPEL = -0.05;
+var REPEL = -0.5;
 var CHILD_AGE = 100;
 var DEATH_AGE = 0;
 var ATTRACTOR_DEATH_AGE = 10000;
 var LAST_BREED = 3000;
 var LAST_MOVE = 30;
-
+var INITIAL_AGENTS = .005;
+var DRAW_ATTRACTORS = true;
+var ATTRACTOR_MODE = ATTRACT;
 var grid = [];
 var agents = [];
 var attractors = [];
@@ -40,13 +42,14 @@ var setupGUI = function(parent) {
 	var gui = new dat.GUI();
 	gui.add(parent, "BREED", 0, 1);
 	gui.add(parent, "ATTRACTOR_RADIUS", 10, 120);
-	gui.add(parent, "ATTRACT", 0, 1);
-	gui.add(parent, "REPEL", 0, 1);
+	gui.add(parent, "ATTRACT", 0, 5);
+	gui.add(parent, "REPEL", -5, 0);
 	gui.add(parent, "CHILD_AGE", 5, 1000);
 	gui.add(parent, "DEATH_AGE", 0, 20000);
 	gui.add(parent, "ATTRACTOR_DEATH_AGE", 0, 20000);
 	gui.add(parent, "LAST_BREED", 100, 3000);
 	gui.add(parent, "LAST_MOVE", 20, 100);
+	gui.add(parent, "DRAW_ATTRACTORS");
 }
 
 window.onload = function() {
@@ -55,8 +58,8 @@ window.onload = function() {
 
 	with(sketch) {
 
-	var image = loadImage("mandrill.jpg");
-	image.loadPixels();
+	var loadedImage = loadImage("mandrill.png");
+	loadedImage.loadPixels();
 	imageData = image.pixels;
 	var directions = [
 		{ x: -1, y: -1 },
@@ -378,24 +381,41 @@ window.onload = function() {
 			}
 
 			this.age += 1;
-
-			stroke(0, 0, 0, 42);
+			if (this.strength == ATTRACT) {
+				stroke(0, 0, 0, 42);
+			} else {
+				stroke(255, 0, 0, 42);
+			}
 			fill(this.color, 42 * this.weight());
-			ellipse(this.x, this.y, ATTRACTOR_RADIUS, ATTRACTOR_RADIUS);
+			ellipse(this.x, this.y, ATTRACTOR_RADIUS * 2, ATTRACTOR_RADIUS * 2);
 			fill(this.color, 128 * this.weight());
 			ellipse(this.x, this.y, this.width, this.height);
 		},
 	};
 
-	size(400, 400);
+	size(d, d);
 
 	loadPixels();
 
 	var deadPixels = createGraphics(width, height);
 	deadPixels.loadPixels();
+	new Attractor(color(0, 0, 0), 100, 100, ATTRACT);
+	new Attractor(color(0, 0, 0), 20, 20, ATTRACT);
+	new Attractor(color(0, 0, 0), 170, 150, ATTRACT);
 
-	new Attractor(color(0, 0, 0), 200, 200, ATTRACT);
-	new Attractor(color(0, 0, 0), 200, 160, REPEL);
+	// new Attractor(color(0, 0, 0), 100, 80, REPEL);
+
+	initAgents = function() {
+		for (var i = 0; i < d; i++) {
+			for (var j = 0; j < d; j++) {
+				if (random(1) < INITIAL_AGENTS) {
+					new Agent(color(0, 0, 0), i, j);
+
+				}
+			}
+		}
+	}
+	initAgents();
 
 	compareImage = function() {
 		if (!(frameCount % 120) == 0) {
@@ -421,9 +441,10 @@ window.onload = function() {
 	draw = function() {
 		background(255, 255, 255);
 		compareImage();
-
-		for (var i = 0, l = attractors.length; i < l; i++) {
-			attractors[i].draw();
+		if (DRAW_ATTRACTORS) {
+			for (var i = 0, l = attractors.length; i < l; i++) {
+				attractors[i].draw();
+			}
 		}
 
 		for (var i = 0, l = agents.length; i < l; i++) {
@@ -434,7 +455,7 @@ window.onload = function() {
 				//} else {
 				//	agent.lastMove += 1;
 				//}
-				
+
 				agent.draw();
 			}
 		}
@@ -448,8 +469,17 @@ window.onload = function() {
 	};
 
 	mousePressed = function() {
-		new Agent(color(0, 0, 0), mouseX, mouseY);
+		new Attractor(color(0, 0, 0), mouseX, mouseY, ATTRACTOR_MODE);
 	};
+	keyPressed = function() {
+		if (key == 120) {
+			if (ATTRACTOR_MODE == REPEL) {
+				ATTRACTOR_MODE = ATTRACT;
+			} else {
+				ATTRACTOR_MODE = REPEL;
+			}
+		}
+	}
 
 	sketch.loop();
 }
