@@ -1,4 +1,11 @@
-
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  var socket = io.connect('http://localhost:4521');
+  socket.on('news', function (data) {
+    console.log(data);
+    socket.emit('my other event', { my: 'data' });
+  });
+</script>
 <style type="text/css">
 	body {
 		font-family: "Helvetica Neue", Arial, Helvetica, sans-serif;
@@ -16,7 +23,7 @@
 <img src="mandrill.png">
 <p>Score: <span id = "score">0</span></p>
 <script src="processing-1.4.1.js"></script>
-<script src="http://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.5/dat.gui.min.js"></script>
+<script src="dat.gui.min.js"></script>
 <script>
 var d = 200;
 var BREED = .05;

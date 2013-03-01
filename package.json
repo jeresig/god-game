@@ -1,0 +1,21 @@
+{
+  "name": "god-game",
+  "version": "0.0.1",
+  "description": "ERROR: No README.md file found!",
+  "main": "index.html",
+  "dependencies": {
+    "socket.io": "~0.9.13",
+    "express": "~3.1.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/jeresig/god-game.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "gitHead": "9000a400d3eac19985fcce99c82ab1ffd172652b"
+}
