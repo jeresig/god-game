@@ -1,11 +1,4 @@
 <script src="/socket.io/socket.io.js"></script>
-<script>
-  var socket = io.connect('http://localhost:4521');
-  socket.on('news', function (data) {
-    console.log(data);
-    socket.emit('my other event', { my: 'data' });
-  });
-</script>
 <style type="text/css">
 	body {
 		font-family: "Helvetica Neue", Arial, Helvetica, sans-serif;
@@ -19,9 +12,10 @@
 		color: #ed145b;
 	}
 </style>
-<canvas id="canvas" width="200" height="200"></canvas>
-<img src="mandrill.png">
-<p>Score: <span id = "score">0</span></p>
+<div id="game">
+	<canvas id="canvas" width="200" height="200"></canvas>
+	<p>Score: <span id = "score">0</span></p>
+</div>
 <script src="processing-1.4.1.js"></script>
 <script src="dat.gui.min.js"></script>
 <script>
@@ -64,6 +58,33 @@ var setupGUI = function(parent) {
 window.onload = function() {
 	setupGUI(this);
 
+	var socket = io.connect('http://' + window.location.host);
+
+	// Don't start game until gameConnect occurs
+	socket.on('gameConnect', function (data) {
+		var img = document.createElement("img");
+		img.src = data.image;
+		img.onload = function() {
+			startGame(data.seed, data.image);
+		};
+
+		document.getElementById("game")
+			.insertBefore(img, document.getElementById("canvas").nextSibling);
+	});
+
+	// Inject Image and wait for it to load
+
+	// Create a random number generator
+	// Seed the random number generator
+	// Handle error connecting
+	// Run things on state
+	// Emit state when attractors are placed
+	// Show scores on done event
+	// Add button to click to start/join a new game
+	// Send in score after timer duration end.
+};
+
+var startGame = function(seed, imageName) {
 	with(sketch) {
 
 	var directions = [
@@ -400,23 +421,8 @@ window.onload = function() {
 			ellipse(this.x, this.y, this.width, this.height);
 		},
 	};
-
-	size(d, d);
-
-	loadPixels();
-
-	var deadPixels = createGraphics(width, height);
-	deadPixels.loadPixels();
-
-	var loadedImage = loadImage("mandrill.png");
-
-	new Attractor(color(0, 0, 0), 100, 100, ATTRACT);
-	new Attractor(color(0, 0, 0), 20, 20, ATTRACT);
-	new Attractor(color(0, 0, 0), 170, 150, ATTRACT);
-
-	// new Attractor(color(0, 0, 0), 100, 80, REPEL);
-
-	initAgents = function() {
+	
+	var initAgents = function() {
 		for (var i = 0; i < d; i++) {
 			for (var j = 0; j < d; j++) {
 				if (random(1) < INITIAL_AGENTS) {
@@ -429,16 +435,9 @@ window.onload = function() {
 				}
 			}
 		}
-	}
-	initAgents();
+	};
 
-	var PIXEL_CHECK = 10000;
-	
-	var curPos = 0;
-	var score = 0;
-	var scores = {};
-
-	compareImage = function() {
+	var compareImage = function() {
 		if (!imageData || !imageData.getPixel) {
 			loadedImage.loadPixels();
 			imageData = loadedImage.pixels;
@@ -473,8 +472,29 @@ window.onload = function() {
 		}
 
 		scoreSpan.innerHTML = (100 * (sum / totalScores)).toFixed(1) + "%";
-
 	};
+
+	size(d, d);
+
+	loadPixels();
+
+	var deadPixels = createGraphics(width, height);
+	deadPixels.loadPixels();
+
+	var loadedImage = loadImage(imageName);
+
+	new Attractor(color(0, 0, 0), 100, 100, ATTRACT);
+	new Attractor(color(0, 0, 0), 20, 20, ATTRACT);
+	new Attractor(color(0, 0, 0), 170, 150, ATTRACT);
+
+	initAgents();
+
+	var PIXEL_CHECK = 10000;
+	
+	var curPos = 0;
+	var score = 0;
+	var scores = {};
+
 	draw = function() {
 		background(255, 255, 255);
 		compareImage();
@@ -507,6 +527,7 @@ window.onload = function() {
 	mousePressed = function() {
 		new Attractor(color(0, 0, 0), mouseX, mouseY, ATTRACTOR_MODE);
 	};
+
 	keyPressed = function() {
 		if (key == 120) {
 			if (ATTRACTOR_MODE == REPEL) {
@@ -515,7 +536,7 @@ window.onload = function() {
 				ATTRACTOR_MODE = REPEL;
 			}
 		}
-	}
+	};
 
 	sketch.loop();
 }
