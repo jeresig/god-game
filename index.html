@@ -13,9 +13,9 @@
 <script>
 var d = 400;
 var BREED = 0.05;
-var ATTRACTOR_RADIUS = 80;
+var ATTRACTOR_RADIUS = 30;
 var ATTRACT = 0.1;
-var REPEL = 0.05;
+var REPEL = -0.05;
 var CHILD_AGE = 100;
 var DEATH_AGE = 0;
 var ATTRACTOR_DEATH_AGE = 10000;
@@ -67,9 +67,11 @@ window.onload = function() {
 		{ x: 0, y: 1 },
 		{ x: 1, y: 1 }
 	];
-	var atPixel  = function(x, y) {
+
+	var atPixel = function(x, y) {
 		return grid[(x * width) + y];
 	};
+
 	var atGrid = function(obj) {
 		var startX = obj.x - floor(obj.width / 2);
 		var endX = obj.x + floor(obj.width / 2);
@@ -128,15 +130,15 @@ window.onload = function() {
 		this.lastBreed = 0;
 		this.lastMove = 0;
 
-		if (!atGrid(this)) {
+		if (!atPixel(x, y)) {
 			addGrid(this);
 			agents.push(this);
 		}
 	};
 
 	Agent.prototype = {
-		width: 2,
-		height: 2,
+		width: 1,
+		height: 1,
 
 		isChild: function() {
 			return this.age < CHILD_AGE;
@@ -163,38 +165,47 @@ window.onload = function() {
 		},
 
 		move: function() {
-			var originalX = this.x;
-			var originalY = this.y;
+			var dir = null;
 
-			var dir = this.attract();
-
-			this.x += dir.x * floor(this.width / 2);
-			this.y += dir.y * floor(this.height / 2);
-
-			if (this.x < 0) {
-				this.x += width;
-			} else if (this.x > width) {
-				this.x -= width;
+			if (this.attractDelay > 0) {
+				dir = directions[Math.floor(Math.random() * directions.length)];
+			} else if (this.weightCache) {
+				dir = this.getDirOnWeight(this.weightCache);
+			} else {
+				dir = this.attract();
 			}
 
-			if (this.y < 0) {
-				this.y += height;
-			} else if (this.y > height) {
-				this.y -= height;
+			var x = this.x + dir.x;
+			var y = this.y + dir.y;
+			//this.x += dir.x; // * (floor(this.width / 2) || 1);
+			//this.y += dir.y; // * (floor(this.height / 2) || 1);
+
+			if (x < 0) {
+				x += width;
+			} else if (x > width) {
+				x -= width;
 			}
 
-			var obj = atGrid(this);
+			if (y < 0) {
+				y += height;
+			} else if (y > height) {
+				y -= height;
+			}
+
+			var obj = atPixel(x, y);
 
 			if (!obj) {
-				removeGrid(this, originalX, originalY);
+				removeGrid(this);
+				this.x = x;
+				this.y = y;
 				addGrid(this);
 				this.lastMove = 0;
+				this.attractDelay -= 1;
+				this.weightCache = null;
 
 			} else {
 				// Handle Collision
 				this.collision(obj);
-				this.x = originalX;
-				this.y = originalY;
 				this.lastMove += 1;
 			}
 		},
@@ -202,14 +213,17 @@ window.onload = function() {
 		attract: function() {
 			var weights = [1, 1, 1, 1, 1, 1, 1, 1];
 			var agent = this;
+			var nearest = width;
+			var match = false;
 
-			attractors.forEach(function(attractor) {
+			for (var i = 0, l = attractors.length; i < l; i++) {
+				var attractor = attractors[i];
 				if (attractor.color === agent.color) {
 					var dist_agent = dist(agent.x, agent.y, attractor.x, attractor.y);
 					if (dist_agent < ATTRACTOR_RADIUS) {
 						var diffX = attractor.x - agent.x;
 						var diffY = attractor.y - agent.y;
-						var weight = ATTRACTOR_RADIUS * (1 / ATTRACT) *
+						var weight = ATTRACTOR_RADIUS * (1 / attractor.strength) *
 							attractor.weight();
 						var xWeight = (ATTRACTOR_RADIUS - diffX) / weight;
 						var yWeight = (ATTRACTOR_RADIUS - diffY) / weight;
@@ -233,21 +247,36 @@ window.onload = function() {
 							weights[1] += yWeight;
 							weights[2] += yWeight;
 						}
+
+						match = true;
+					} else {
+						nearest = Math.min(nearest, dist_agent);
 					}
 				}
-			});
+			}
 
+			if (!match) {
+				this.attractDelay = nearest - (ATTRACTOR_RADIUS / 2);
+				return directions[Math.floor(Math.random() * directions.length)];
+			}
+
+			this.weightCache = weights;
+
+			return this.getDirOnWeight(weights);
+		},
+
+		getDirOnWeight: function(weights) {
 			var totalWeight = 0;
 
-			weights.forEach(function(weight) {
-				totalWeight += weight;
-			});
+			for (var i = 0, l = weights.length; i < l; i++) {
+				totalWeight += weights[i];
+			}
 
 			var cutoff = random(totalWeight);
 			var sumWeight = 0;
 			var dir = 0;
 
-			for (var i = 0; i < weights.length; i++) {
+			for (var i = 0, l = weights.length; i < l; i++) {
 				sumWeight += weights[i];
 
 				if (cutoff < sumWeight) {
@@ -272,30 +301,26 @@ window.onload = function() {
 
 		breed: function() {
 			this.lastBreed = 0;
-			var dir = directions[floor(random(directions.length))];
+			var dir = directions[Math.floor(Math.random() * directions.length)];
 			var childX = this.x + (dir.x * this.width);
 			var childY = this.y + (dir.y * this.height);
 			new Agent(this.color, childX, childY);
 		},
 
 		draw: function() {
-			if (this.isDead() || this.isInfertile() || this.isStagnant()) {
-				if (this.isInfertile()) {
-					console.log("DEATH: INFERTILE");
-				} else if (this.isStagnant()) {
-					console.log("DEATH: STAGNANT");
-				}
+			var doCheck = this.age % 10 === 0;
+
+			if (doCheck &&
+					(this.isDead() || this.isInfertile() || this.isStagnant())) {
 				this.kill();
 				return;
 			}
 
-			noStroke();
 			if (this.isChild()) {
-				fill(this.color, 128);
+				set(this.x, this.y, this.color);
 			} else {
-				fill(this.color);
+				set(this.x, this.y, this.color);
 			}
-			ellipse(this.x, this.y, this.width, this.height);
 
 			this.age += 1;
 			this.lastBreed += 1;
@@ -316,10 +341,10 @@ window.onload = function() {
 	};
 
 	Attractor.prototype = {
-		width: 8,
-		height: 8,
 		lastFrame: -1,
 		_weight: 1,
+		width: 4,
+		height: 4,
 
 		isDead: function() {
 			return ATTRACTOR_DEATH_AGE > 0 && this.age > ATTRACTOR_DEATH_AGE;
@@ -360,8 +385,8 @@ window.onload = function() {
 	};
 
 	size(400, 400);
-	new Attractor(color(0, 0, 0), 100, 200);
-	new Attractor(color(0, 0, 0), 300, 200);
+	new Attractor(color(0, 0, 0), 200, 200, ATTRACT);
+	new Attractor(color(0, 0, 0), 200, 160, REPEL);
 
 	compareImage = function() {
 		if (!(frameCount % 120) == 0) {
@@ -386,6 +411,7 @@ window.onload = function() {
 					score++;
 				} else if (srcPixel != 255){
 
+
 				}
 			}
 		}
@@ -395,14 +421,21 @@ window.onload = function() {
 		background(255, 255, 255);
 		compareImage();
 
-		attractors.forEach(function(attractor) {
-			attractor.draw();
-		});
+		for (var i = 0, l = attractors.length; i < l; i++) {
+			attractors[i].draw();
+		}
 
-		agents.forEach(function(agent) {
-			agent.move();
-			agent.draw();
-		});
+		for (var i = 0, l = agents.length; i < l; i++) {
+			var agent = agents[i];
+			if (agent) {
+				if (agent.lastMove % 3 === 0) {
+					agent.move();
+				} else {
+					agent.lastMove += 1;
+				}
+				agent.draw();
+			}
+		}
 	};
 
 	mousePressed = function() {
