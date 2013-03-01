@@ -397,6 +397,9 @@ window.onload = function() {
 
 	var deadPixels = createGraphics(width, height);
 	deadPixels.loadPixels();
+
+	var loadedImage = loadImage("mandrill.png");
+
 	new Attractor(color(0, 0, 0), 100, 100, ATTRACT);
 	new Attractor(color(0, 0, 0), 20, 20, ATTRACT);
 	new Attractor(color(0, 0, 0), 170, 150, ATTRACT);
@@ -422,8 +425,10 @@ window.onload = function() {
 	var scores = {};
 
 	compareImage = function() {
-		loadedImage.loadPixels();
-		imageData = loadedImage.pixels;
+		if (!imageData || !imageData.getPixel) {
+			loadedImage.loadPixels();
+			imageData = loadedImage.pixels;
+		}
 
 		var numPixels = d * d;
 		var max = Math.min(curPos + PIXEL_CHECK, numPixels);
