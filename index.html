@@ -25,8 +25,8 @@ var ATTRACT = 0.1;
 var REPEL = -0.5;
 var CHILD_AGE = 100;
 var DEATH_AGE = 0;
-var ATTRACTOR_DEATH_AGE = 10000;
-var LAST_BREED = 3000;
+var ATTRACTOR_DEATH_AGE = 750;
+var LAST_BREED = 1500;
 var LAST_MOVE = 30;
 var INITIAL_AGENTS = .005;
 var DRAW_ATTRACTORS = true;
@@ -95,7 +95,7 @@ window.onload = function() {
 		return false;
 	};
 
-	var addGrid = function(obj) {
+	var addGrid = function(obj, doKill) {
 		var startX = obj.x - floor(obj.width / 2);
 		var endX = obj.x + floor(obj.width / 2);
 		var startY = obj.y - floor(obj.height / 2);
@@ -104,6 +104,9 @@ window.onload = function() {
 		for (var x = startX; x <= endX; x++) {
 			for (var y = startY; y <= endY; y++) {
 				var pos = (x * width) + y;
+				if (doKill && grid[pos]) {
+					grid[pos].kill();
+				}
 				grid[pos] = obj;
 			}
 		}
@@ -167,7 +170,9 @@ window.onload = function() {
 
 			// Remove agent from the list
 			var pos = agents.indexOf(this);
-			agents.splice(pos, 1);
+			if (pos >= 0) {
+				agents.splice(pos, 1);
+			}
 		},
 
 		move: function() {
@@ -338,10 +343,8 @@ window.onload = function() {
 		this.strength = strength;
 		this.age = 0;
 
-		if (!atGrid(this)) {
-			addGrid(this);
-			attractors.push(this);
-		}
+		addGrid(this, true);
+		attractors.push(this);
 	};
 
 	Attractor.prototype = {
@@ -485,7 +488,9 @@ window.onload = function() {
 		}
 
 		if (agents.length) {
-			updatePixels();
+			try {
+				updatePixels();
+			} catch(e) {}
 		}
 
 		deadPixels.updatePixels();
