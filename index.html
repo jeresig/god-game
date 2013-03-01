@@ -1,0 +1,140 @@
+
+<canvas id="canvas" width="400" height="400"></canvas>
+<script src="processing-1.4.1.js"></script>
+<script>
+window.onload = function() {
+	var sketch = new Processing("canvas");
+
+	with(sketch) {
+
+	var BREED = 0.05;
+
+	var directions = [
+		{ x: -1, y: -1 },
+		{ x: 0, y: -1 },
+		{ x: 1, y: -1 },
+		{ x: -1, y: 0 },
+		{ x: 0, y: 0 },
+		{ x: 1, y: 0 },
+		{ x: -1, y: 1 },
+		{ x: 0, y: 1 },
+		{ x: 1, y: 1 }
+	];
+
+	var overlap = {
+		atPos: function(x, y) {
+			return this[x + ":" + y];
+		}
+	};
+	var agents = [];
+
+	var addAgent = function(color, x, y) {
+		var agent = new Agent(color, x, y);
+		agents.push(agent);
+	};
+
+	var Agent = function(color, x, y) {
+		this.color = color;
+		this.x = x;
+		this.y = y;
+	};
+	
+	Agent.prototype = {
+		move: function() {
+			// Add in attactor weights
+
+			var originalX = this.x;
+			var originalY = this.y;
+
+			delete overlap[this.location()];
+
+			var dir = floor(random(directions.length));
+			dir = directions[dir];
+
+			this.x += dir.x;
+			this.y += dir.y;
+
+			if (this.x < 0) {
+				this.x += width;
+			} else if (this.x > width) {
+				this.x -= width;
+			}
+
+			if (this.y < 0) {
+				this.y += height;
+			} else if (this.y > height) {
+				this.y -= height;
+			}
+
+			var atOverlap = overlap[this.location()];
+
+			if (atOverlap) {
+				// Handle Collision
+				this.collision(atOverlap);
+				this.x = originalX;
+				this.y = originalY;
+			}
+
+			overlap[this.location()] = this;
+		},
+
+		collision: function(other) {
+			if (other.color === this.color) {
+				// Breed!
+				if (random(1) < BREED) {
+					this.breed();
+				}
+			}
+		},
+
+		breed: function() {
+			
+			var dir = directions[floor(random(directions.length))];
+			var childX = this.x + dir.x;
+			var childY = this.y + dir.y
+			//console.log("Breed??", this.x, this.y, childX, childY, overlap.atPos(childX, childY));
+			if (!overlap.atPos(childX, childY)) {
+				console.log("BREEEEEEDDDD");
+				addAgent(color(255, 0, 0), childX, childY);
+			}
+		},
+
+		draw: function() {
+			noStroke();
+			fill(this.color);
+			rect(this.x, this.y, 4, 4);
+		},
+
+		location: function() {
+			return this.x + ":" + this.y;
+		}
+	};
+
+	var Attractor = function() {
+		
+		
+	};
+
+	size(400, 400);
+
+	draw = function() {
+		background(255, 255, 255);
+		
+		agents.forEach(function(agent) {
+			agent.move();
+			agent.draw();
+		});
+
+		agents.forEach(function(agent) {
+			
+		});
+	};
+
+	mousePressed = function() {
+		addAgent(color(0, 0, 0), mouseX, mouseY);
+	};
+
+	sketch.loop();
+}
+};
+</script>
