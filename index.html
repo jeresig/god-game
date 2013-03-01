@@ -7,7 +7,7 @@
 </style>
 <canvas id="canvas" width="400" height="400"></canvas>
 <script src="processing-1.4.1.js"></script>
-<script src="//cdnjs.cloudflare.com/ajax/libs/dat-gui/0.5/dat.gui.min.js"></script>
+<script src="http://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.5/dat.gui.min.js"></script>
 <script>
 var BREED = 0.05;
 var ATTRACTOR_RADIUS = 80;
@@ -23,7 +23,21 @@ var grid = [];
 var agents = [];
 var attractors = [];
 
+var setupGUI = function(parent) {
+	var gui = new dat.GUI();
+	gui.add(parent, "BREED", 0, 1);
+	gui.add(parent, "ATTRACTOR_RADIUS", 10, 120);
+	gui.add(parent, "ATTRACT", 0, 1);
+	gui.add(parent, "REPEL", 0, 1);
+	gui.add(parent, "CHILD_AGE", 5, 1000);
+	gui.add(parent, "DEATH_AGE", 0, 20000);
+	gui.add(parent, "ATTRACTOR_DEATH_AGE", 0, 20000);
+	gui.add(parent, "LAST_BREED", 100, 3000);
+	gui.add(parent, "LAST_MOVE", 20, 100);
+}
+
 window.onload = function() {
+	setupGUI(this);
 	var sketch = new Processing("canvas");
 
 	with(sketch) {
@@ -32,11 +46,11 @@ window.onload = function() {
 		{ x: -1, y: -1 },
 		{ x: 0, y: -1 },
 		{ x: 1, y: -1 },
-		
+
 		{ x: -1, y: 0 },
 		//{ x: 0, y: 0 },
 		{ x: 1, y: 0 },
-		
+
 		{ x: -1, y: 1 },
 		{ x: 0, y: 1 },
 		{ x: 1, y: 1 }
@@ -47,7 +61,7 @@ window.onload = function() {
 		var endX = obj.x + floor(obj.width / 2);
 		var startY = obj.y - floor(obj.height / 2);
 		var endY = obj.y + floor(obj.height / 2);
-		
+
 		for (var x = startX; x <= endX; x++) {
 			for (var y = startY; y <= endY; y++) {
 				var pos = (x * width) + y;
@@ -65,7 +79,7 @@ window.onload = function() {
 		var endX = obj.x + floor(obj.width / 2);
 		var startY = obj.y - floor(obj.height / 2);
 		var endY = obj.y + floor(obj.height / 2);
-		
+
 		for (var x = startX; x <= endX; x++) {
 			for (var y = startY; y <= endY; y++) {
 				var pos = (x * width) + y;
@@ -81,7 +95,7 @@ window.onload = function() {
 		var endX = x + floor(obj.width / 2);
 		var startY = y - floor(obj.height / 2);
 		var endY = y + floor(obj.height / 2)
-		
+
 		for (var x = startX; x <= endX; x++) {
 			for (var y = startY; y <= endY; y++) {
 				var pos = (x * width) + y;
@@ -99,7 +113,7 @@ window.onload = function() {
 		this.age = 0;
 		this.lastBreed = 0;
 		this.lastMove = 0;
-		
+
 		if (!atGrid(this)) {
 			addGrid(this);
 			agents.push(this);
@@ -185,7 +199,7 @@ window.onload = function() {
 							attractor.weight();
 						var xWeight = (ATTRACTOR_RADIUS - diffX) / weight;
 						var yWeight = (ATTRACTOR_RADIUS - diffY) / weight;
-						
+
 						if (diffX > 0) {
 							weights[2] += xWeight;
 							weights[4] += xWeight;
@@ -195,7 +209,7 @@ window.onload = function() {
 							weights[3] += xWeight;
 							weights[5] += xWeight;
 						}
-						
+
 						if (diffY > 0) {
 							weights[5] += yWeight;
 							weights[6] += yWeight;
@@ -218,16 +232,16 @@ window.onload = function() {
 			var cutoff = random(totalWeight);
 			var sumWeight = 0;
 			var dir = 0;
-			
+
 			for (var i = 0; i < weights.length; i++) {
 				sumWeight += weights[i];
-				
+
 				if (cutoff < sumWeight) {
 					dir = i;
 					break;
 				}
 			}
-			
+
 			return directions[dir];
 		},
 
@@ -280,7 +294,7 @@ window.onload = function() {
 		this.y = y;
 		this.strength = strength;
 		this.age = 0;
-		
+
 		if (!atGrid(this)) {
 			addGrid(this);
 			attractors.push(this);
