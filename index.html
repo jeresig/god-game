@@ -8,14 +8,17 @@ window.onload = function() {
 	with(sketch) {
 
 	var BREED = 0.05;
+	var ATTRACTOR_RADIUS = 80;
 
 	var directions = [
 		{ x: -1, y: -1 },
 		{ x: 0, y: -1 },
 		{ x: 1, y: -1 },
+		
 		{ x: -1, y: 0 },
-		{ x: 0, y: 0 },
+		//{ x: 0, y: 0 },
 		{ x: 1, y: 0 },
+		
 		{ x: -1, y: 1 },
 		{ x: 0, y: 1 },
 		{ x: 1, y: 1 }
@@ -27,6 +30,7 @@ window.onload = function() {
 		}
 	};
 	var agents = [];
+	var attractors = [];
 
 	var addAgent = function(color, x, y) {
 		var agent = new Agent(color, x, y);
@@ -48,8 +52,9 @@ window.onload = function() {
 
 			delete overlap[this.location()];
 
-			var dir = floor(random(directions.length));
-			dir = directions[dir];
+			var dir = this.attract();
+			//floor(random(directions.length));
+			//dir = directions[dir];
 
 			this.x += dir.x;
 			this.y += dir.y;
@@ -78,6 +83,65 @@ window.onload = function() {
 			overlap[this.location()] = this;
 		},
 
+		attract: function() {
+			var weights = [1, 1, 1, 1, 1, 1, 1, 1];
+			var agent = this;
+
+			attractors.forEach(function(attractor) {
+				if (attractor.color === agent.color) {
+					var dist_agent = dist(agent.x, agent.y, attractor.x, attractor.y);
+					if (dist_agent < ATTRACTOR_RADIUS) {
+						var diffX = attractor.x - agent.x;
+						var diffY = attractor.y - agent.y;
+						var weight = ATTRACTOR_RADIUS * 10;
+						var xWeight = (ATTRACTOR_RADIUS - diffX) / weight;
+						var yWeight = (ATTRACTOR_RADIUS - diffY) / weight;
+						
+						if (diffX > 0) {
+							weights[2] += xWeight;
+							weights[4] += xWeight;
+							weights[7] += xWeight;
+						} else if (diffX < 0) {
+							weights[0] += xWeight;
+							weights[3] += xWeight;
+							weights[5] += xWeight;
+						}
+						
+						if (diffY > 0) {
+							weights[5] += yWeight;
+							weights[6] += yWeight;
+							weights[7] += yWeight;
+						} else if (diffY < 0) {
+							weights[0] += yWeight;
+							weights[1] += yWeight;
+							weights[2] += yWeight;
+						}
+					}
+				}
+			});
+
+			var totalWeight = 0;
+
+			weights.forEach(function(weight) {
+				totalWeight += weight;
+			});
+
+			var cutoff = random(totalWeight);
+			var sumWeight = 0;
+			var dir;
+			
+			for (var i = 0; i < weights.length; i++) {
+				sumWeight += weights[i];
+				
+				if (cutoff < sumWeight) {
+					dir = i;
+					break;
+				}
+			}
+			
+			return directions[dir];
+		},
+
 		collision: function(other) {
 			if (other.color === this.color) {
 				// Breed!
@@ -94,7 +158,7 @@ window.onload = function() {
 			var childY = this.y + dir.y
 			//console.log("Breed??", this.x, this.y, childX, childY, overlap.atPos(childX, childY));
 			if (!overlap.atPos(childX, childY)) {
-				console.log("BREEEEEEDDDD");
+				//console.log("BREEEEEEDDDD");
 				addAgent(color(255, 0, 0), childX, childY);
 			}
 		},
@@ -102,7 +166,7 @@ window.onload = function() {
 		draw: function() {
 			noStroke();
 			fill(this.color);
-			rect(this.x, this.y, 4, 4);
+			rect(this.x, this.y, 2, 2);
 		},
 
 		location: function() {
@@ -110,24 +174,46 @@ window.onload = function() {
 		}
 	};
 
-	var Attractor = function() {
-		
-		
+	var addAttractor = function(color, x, y, strength) {
+		var attractor = new Attractor(color, x, y, strength);
+		attractors.push(attractor);
+	};
+
+	var Attractor = function(color, x, y, strength) {
+		this.color = color;
+		this.x = x;
+		this.y = y;
+		this.strength = strength;
+	};
+
+	Attractor.prototype = {
+		draw: function() {
+			stroke(0, 0, 0);
+			fill(this.color, 0.1);
+			ellipse(this.x, this.y, ATTRACTOR_RADIUS, ATTRACTOR_RADIUS);
+			fill(this.color);
+			ellipse(this.x, this.y, 8, 8);
+		},
 	};
 
 	size(400, 400);
 
+	addAttractor(color(0, 0, 0), 200, 200);
+	addAttractor(color(0, 0, 0), 200, 160);
+
 	draw = function() {
 		background(255, 255, 255);
-		
+
+		attractors.forEach(function(attractor) {
+			attractor.draw();
+		});
+
 		agents.forEach(function(agent) {
 			agent.move();
 			agent.draw();
 		});
 
-		agents.forEach(function(agent) {
-			
-		});
+
 	};
 
 	mousePressed = function() {
