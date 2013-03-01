@@ -117,6 +117,7 @@ window.onload = function() {
 		this.age = 0;
 		this.lastBreed = 0;
 		this.lastMove = 0;
+		this.dead = false;
 
 		if (!atPixel(x, y)) {
 			addGrid(this);
@@ -133,7 +134,7 @@ window.onload = function() {
 		},
 
 		isDead: function() {
-			return DEATH_AGE > 0 && this.age > DEATH_AGE;
+			return this.dead || DEATH_AGE > 0 && this.age > DEATH_AGE;
 		},
 
 		isInfertile: function() {
@@ -145,7 +146,7 @@ window.onload = function() {
 		},
 
 		kill: function() {
-			removeGrid(this);
+			this.dead = true;
 
 			// Remove agent from the list
 			var pos = agents.indexOf(this);
@@ -195,6 +196,10 @@ window.onload = function() {
 				// Handle Collision
 				this.collision(obj);
 				this.lastMove += 1;
+			}
+
+			if (this.isDead() || this.isInfertile() || this.isStagnant()) {
+				this.kill();
 			}
 		},
 
@@ -296,16 +301,10 @@ window.onload = function() {
 		},
 
 		draw: function() {
-			var doCheck = this.age % 10 === 0;
-
-			if (doCheck &&
-					(this.isDead() || this.isInfertile() || this.isStagnant())) {
-				this.kill();
-				return;
-			}
-
 			if (this.isChild()) {
 				set(this.x, this.y, this.color);
+			} else if (this.dead) {
+				deadPixels.set(this.x, this.y, this.color);
 			} else {
 				set(this.x, this.y, this.color);
 			}
@@ -368,6 +367,11 @@ window.onload = function() {
 
 	size(400, 400);
 
+	loadPixels();
+
+	var deadPixels = createGraphics(width, height);
+	deadPixels.loadPixels();
+
 	new Attractor(color(0, 0, 0), 200, 200, ATTRACT);
 	new Attractor(color(0, 0, 0), 200, 160, REPEL);
 
@@ -381,14 +385,22 @@ window.onload = function() {
 		for (var i = 0, l = agents.length; i < l; i++) {
 			var agent = agents[i];
 			if (agent) {
-				if (agent.lastMove % 3 === 0) {
+				//if (agent.lastMove % 3 === 0) {
 					agent.move();
-				} else {
-					agent.lastMove += 1;
-				}
+				//} else {
+				//	agent.lastMove += 1;
+				//}
+				
 				agent.draw();
 			}
 		}
+
+		if (agents.length) {
+			updatePixels();
+		}
+
+		deadPixels.updatePixels();
+		image(deadPixels, 0, 0);
 	};
 
 	mousePressed = function() {
