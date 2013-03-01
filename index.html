@@ -15,6 +15,8 @@ window.onload = function() {
 
 	var BREED = 0.05;
 	var ATTRACTOR_RADIUS = 80;
+	var ATTRACT = 0.1;
+	var REPEL = 0.05;
 
 	var directions = [
 		{ x: -1, y: -1 },
@@ -30,17 +32,67 @@ window.onload = function() {
 		{ x: 1, y: 1 }
 	];
 
-	var overlap = {
-		atPos: function(x, y) {
-			return this[x + ":" + y];
+	var grid = [];
+
+	var atGrid = function(obj) {
+		var startX = obj.x - floor(obj.width / 2);
+		var endX = obj.x + floor(obj.width / 2);
+		var startY = obj.y - floor(obj.height / 2);
+		var endY = obj.y + floor(obj.height / 2);
+		
+		for (var x = startX; x <= endX; x++) {
+			for (var y = startY; y <= endY; y++) {
+				var pos = (x * width) + y;
+				if (grid[pos] && grid[pos] !== obj) {
+					return grid[pos];
+				}
+			}
+		}
+
+		return false;
+	};
+
+	var addGrid = function(obj) {
+		var startX = obj.x - floor(obj.width / 2);
+		var endX = obj.x + floor(obj.width / 2);
+		var startY = obj.y - floor(obj.height / 2);
+		var endY = obj.y + floor(obj.height / 2);
+		
+		for (var x = startX; x <= endX; x++) {
+			for (var y = startY; y <= endY; y++) {
+				var pos = (x * width) + y;
+				grid[pos] = obj;
+			}
 		}
 	};
+
+	var removeGrid = function(obj, x, y) {
+		x = x || obj.x;
+		y = y || obj.y
+		var startX = x - floor(obj.width / 2);
+		var endX = x + floor(obj.width / 2);
+		var startY = y - floor(obj.height / 2);
+		var endY = y + floor(obj.height / 2)
+		
+		for (var x = startX; x <= endX; x++) {
+			for (var y = startY; y <= endY; y++) {
+				var pos = (x * width) + y;
+				if (grid[pos] === obj) {
+					grid[pos] = null;
+				}
+			}
+		}
+	};
+
 	var agents = [];
 	var attractors = [];
 
 	var addAgent = function(color, x, y) {
 		var agent = new Agent(color, x, y);
-		agents.push(agent);
+		if (!atGrid(agent)) {
+			addGrid(agent);
+			agents.push(agent);
+		}
 	};
 
 	var Agent = function(color, x, y) {
@@ -50,20 +102,19 @@ window.onload = function() {
 	};
 
 	Agent.prototype = {
+		width: 2,
+		height: 2,
+
 		move: function() {
 			// Add in attactor weights
 
 			var originalX = this.x;
 			var originalY = this.y;
 
-			delete overlap[this.location()];
-
 			var dir = this.attract();
-			//floor(random(directions.length));
-			//dir = directions[dir];
 
-			this.x += dir.x;
-			this.y += dir.y;
+			this.x += dir.x * floor(this.width / 2);
+			this.y += dir.y * floor(this.height / 2);
 
 			if (this.x < 0) {
 				this.x += width;
@@ -77,16 +128,18 @@ window.onload = function() {
 				this.y -= height;
 			}
 
-			var atOverlap = overlap[this.location()];
+			var obj = atGrid(this);
 
-			if (atOverlap) {
+			if (!obj) {
+				removeGrid(this, originalX, originalY);
+				addGrid(this);
+
+			} else {
 				// Handle Collision
-				this.collision(atOverlap);
+				this.collision(obj);
 				this.x = originalX;
 				this.y = originalY;
 			}
-
-			overlap[this.location()] = this;
 		},
 
 		attract: function() {
@@ -99,7 +152,7 @@ window.onload = function() {
 					if (dist_agent < ATTRACTOR_RADIUS) {
 						var diffX = attractor.x - agent.x;
 						var diffY = attractor.y - agent.y;
-						var weight = ATTRACTOR_RADIUS * 10;
+						var weight = ATTRACTOR_RADIUS * (1 / ATTRACT);
 						var xWeight = (ATTRACTOR_RADIUS - diffX) / weight;
 						var yWeight = (ATTRACTOR_RADIUS - diffY) / weight;
 						
@@ -149,7 +202,8 @@ window.onload = function() {
 		},
 
 		collision: function(other) {
-			if (other.color === this.color) {
+			//console.log("Collision", other);
+			if (other.color === this.color && other instanceof Agent) {
 				// Breed!
 				if (random(1) < BREED) {
 					this.breed();
@@ -158,31 +212,25 @@ window.onload = function() {
 		},
 
 		breed: function() {
-
 			var dir = directions[floor(random(directions.length))];
-			var childX = this.x + dir.x;
-			var childY = this.y + dir.y
-			//console.log("Breed??", this.x, this.y, childX, childY, overlap.atPos(childX, childY));
-			if (!overlap.atPos(childX, childY)) {
-				//console.log("BREEEEEEDDDD");
-				addAgent(color(255, 0, 0), childX, childY);
-			}
+			var childX = this.x + (dir.x * this.width);
+			var childY = this.y + (dir.y * this.height);
+			addAgent(color(255, 0, 0), childX, childY);
 		},
 
 		draw: function() {
 			noStroke();
 			fill(this.color);
-			rect(this.x, this.y, 2, 2);
-		},
-
-		location: function() {
-			return this.x + ":" + this.y;
+			ellipse(this.x, this.y, this.width, this.height);
 		}
 	};
 
 	var addAttractor = function(color, x, y, strength) {
 		var attractor = new Attractor(color, x, y, strength);
-		attractors.push(attractor);
+		if (!atGrid(attractor)) {
+			addGrid(attractor);
+			attractors.push(attractor);
+		}
 	};
 
 	var Attractor = function(color, x, y, strength) {
@@ -193,12 +241,15 @@ window.onload = function() {
 	};
 
 	Attractor.prototype = {
+		width: 8,
+		height: 8,
+
 		draw: function() {
 			stroke(0, 0, 0);
 			fill(this.color, 0.1);
 			ellipse(this.x, this.y, ATTRACTOR_RADIUS, ATTRACTOR_RADIUS);
 			fill(this.color);
-			ellipse(this.x, this.y, 8, 8);
+			ellipse(this.x, this.y, this.width, this.height);
 		},
 	};
 
