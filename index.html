@@ -53,7 +53,7 @@
 <script src="dat.gui.min.js"></script>
 <script>
 var d = 200;
-var BREED = .05;
+var BREED = .3;
 var ATTRACTOR_RADIUS = 30;
 var ATTRACT = 0.1;
 var REPEL = -0.5;
@@ -96,25 +96,25 @@ var setupGUI = function(parent) {
 	gui.add(parent, "LAST_MOVE", 20, 100);
 	gui.add(parent, "DRAW_ATTRACTORS");
 }
+
+var switchAttractorMode = function(mode, color) {
+	ATTRACTOR_MODE = mode;
+	ATTRACTOR_COLOR = color;
+}
 Array.prototype.slice.call(document.getElementsByTagName("button")).forEach(function(button) {
 	button.onclick = function() {
 		switch(button.innerHTML) {
 			case "B+":
-				ATTRACTOR_MODE = ATTRACT;
-				ATTRACTOR_COLOR = 0;
+				switchAttractorMode(ATTRACT, 0);
 				break;
 			case "B-":
-				ATTRACTOR_MODE = REPEL;
-				ATTRACTOR_COLOR = 0;
-
+				switchAttractorMode(REPEL, 0);
 				break;
 			case "R+":
-				ATTRACTOR_MODE = ATTRACT;
-				ATTRACTOR_COLOR = 1;
+				switchAttractorMode(ATTRACT, 1);
 				break;
 			case "R-":
-				ATTRACTOR_MODE = REPEL;
-				ATTRACTOR_COLOR = 1;
+				switchAttractorMode(REPEL, 1);
 				break;
 			default:
 				break;
@@ -122,6 +122,7 @@ Array.prototype.slice.call(document.getElementsByTagName("button")).forEach(func
 		}
 	};
 });
+
 
 var initGame = function(gameState, socket) {
 	// Inject Image and wait for it to load
@@ -507,11 +508,20 @@ var startGame = function(gameState, socket) {
 				this.kill();
 				return;
 			}
+			var radius = ATTRACTOR_RADIUS * 2;
+			if (this == newestAttractor) {
+				if (attractorCooldown > MAX_ATTRACTOR_COOLDOWN * .5) {
+					return;
+				} else {
+					var scale = 1 - (attractorCooldown/(MAX_ATTRACTOR_COOLDOWN * .5));
+					radius *= scale;
 
+				}
+			}
 			this.age += 1;
 			noStroke();
 			fill(this.color, 42 * this.weight());
-			ellipse(this.x, this.y, ATTRACTOR_RADIUS * 2, ATTRACTOR_RADIUS * 2);
+			ellipse(this.x, this.y, radius, radius);
 			fill(this.color, 255);
 			rect(this.x - 3, this.y - 1, 6, 2);
 			if (this.strength == ATTRACT) {
@@ -533,7 +543,6 @@ var startGame = function(gameState, socket) {
 	new Attractor(COLOR_B, 20, 20, REPEL);
 	new Attractor(COLOR_A, 170, 150, REPEL);
 
-	// new Attractor(color(0, 0, 0), 100, 80, REPEL);
 
 	initAgents = function() {
 		for (var i = 0; i < d; i++) {
@@ -666,6 +675,25 @@ var startGame = function(gameState, socket) {
 		}
 	};
 
+	keyPressed = function() {
+		switch(keyCode) {
+			case 49:
+				switchAttractorMode(ATTRACT, 0);
+				break;
+			case 50:
+				switchAttractorMode(REPEL, 0);
+				break;
+			case 51:
+				switchAttractorMode(ATTRACT, 1);
+				break;
+			case 52:
+				switchAttractorMode(REPEL, 1);
+				break;
+			default:
+				break;
+				//pass
+		}
+	}
 	if (socket) {
 		// Handle error connecting
 		socket.on('error', function(data) {
