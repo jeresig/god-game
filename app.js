@@ -26,7 +26,7 @@ var createGame = function() {
 	};
 };
 
-var addPlayer = function(game) {
+var addPlayer = function(game, socket) {
 	//    Give them an image to work off of
 	//    Make sure that the image isn't the same as another player's
 	var image;
@@ -41,7 +41,8 @@ var addPlayer = function(game) {
 	}
 
 	game.players.push({
-		image: image
+		image: image,
+		socket: socket
 	});
 
 	return image;
@@ -56,7 +57,13 @@ var gameDone = function(socket) {
 	curGame = null;
 };
 
-// TODO: Handle disconnect, remove player from game!
+var gameStateLog = function() {
+	if (!curGame) {
+		return;
+	}
+
+	console.log("# Players: " + curGame.players.length);
+};
 
 io.sockets.on('connection', function (socket) {
 	// If no one is connected to a game, start a game
@@ -66,7 +73,7 @@ io.sockets.on('connection', function (socket) {
 
 	// If a game exists, connect people to that game
 	// Only connect if there are available slots
-	var image = addPlayer(curGame);
+	var image = addPlayer(curGame, socket);
 	if (image) {
 		//    Send them the seed and how long the game will last
 		socket.emit('gameConnect', {
@@ -74,6 +81,9 @@ io.sockets.on('connection', function (socket) {
 			duration: curGame.duration,
 			image: image
 		});
+
+		console.log("Player connected: " + image);
+		gameStateLog();
 
 	} else {
 		socket.emit('error', {
@@ -95,5 +105,22 @@ io.sockets.on('connection', function (socket) {
 		if (curGame.scores.length === curGame.players.length) {
 			gameDone(socket);
 		}
+	});
+
+	// TODO: Handle disconnect, remove player from game!
+	socket.on('disconnect', function(data) {
+		if (!curGame) {
+			return;
+		}
+		curGame.players = curGame.players.filter(function(player) {
+			if (player.socket === socket) {
+				curGame.unusedImages.push(player.image);
+				return false;
+			}
+			return true;
+		});
+
+		console.log("Player disconnected.");
+		gameStateLog();
 	});
 });

@@ -48,7 +48,6 @@
 <button class = "red" id = "rr">R-</button>
 </div>
 <canvas id="canvas" width="200" height="200" ></canvas>
-<img src="mandrill.png" id = "mandrill"/>
 <p>Score: <span id = "score">0</span></p>
 <script src="processing-1.4.1.js"></script>
 <script src="dat.gui.min.js"></script>
@@ -74,6 +73,8 @@ var scaleFactor = d/600; //600 hardcoded since it's in the CSS
 var COLOR_A, COLOR_B;
 var imageData;
 var scoreSpan = document.getElementById("score");
+
+var gameSeed = 0;
 
 var sketch = new Processing("canvas");
 
@@ -123,29 +124,52 @@ window.onload = function() {
 
 	// Don't start game until gameConnect occurs
 	socket.on('gameConnect', function (data) {
+		// Inject Image and wait for it to load
 		var img = document.createElement("img");
+		img.id = "mandrill";
 		img.src = data.image;
 		img.onload = function() {
 			startGame(data.seed, data.image);
 		};
 
-		document.getElementById("game")
-			.insertBefore(img, document.getElementById("canvas").nextSibling);
+		var canvas = document.getElementById("canvas");
+		canvas.parentNode.insertBefore(img, canvas.nextSibling);
 	});
 
-	// Inject Image and wait for it to load
-
-	// Create a random number generator
-	// Seed the random number generator
 	// Handle error connecting
 	// Run things on state
 	// Emit state when attractors are placed
 	// Show scores on done event
 	// Add button to click to start/join a new game
 	// Send in score after timer duration end.
+	// Have agents die of stagnant at random times
+};
+
+// Create a random number generator
+
+// A seeded random number generator for dropping random,
+// but consistent, tiles
+var seededRandom = function() {
+    // Robert Jenkins' 32 bit integer hash function.
+    // JS implementation from V8 benchmark
+    var seed = gameSeed;
+
+    seed = ((seed + 0x7ed55d16) + (seed << 12))  & 0xffffffff;
+    seed = ((seed ^ 0xc761c23c) ^ (seed >>> 19)) & 0xffffffff;
+    seed = ((seed + 0x165667b1) + (seed << 5))   & 0xffffffff;
+    seed = ((seed + 0xd3a2646c) ^ (seed << 9))   & 0xffffffff;
+    seed = ((seed + 0xd3a2646c) ^ (seed << 9))   & 0xffffffff;
+    seed = ((seed + 0xfd7046c5) + (seed << 3))   & 0xffffffff;
+    seed = ((seed ^ 0xb55a4f09) ^ (seed >>> 16)) & 0xffffffff;
+
+	gameSeed = (seed & 0xfffffff);
+	return gameSeed / 0x10000000;
 };
 
 var startGame = function(seed, imageName) {
+	// Seed the random number generator
+	gameSeed = seed;
+
 	with(sketch) {
 
 
@@ -272,7 +296,7 @@ var startGame = function(seed, imageName) {
 			var dir = null;
 
 			if (this.attractDelay > 0) {
-				dir = directions[Math.floor(Math.random() * directions.length)];
+				dir = directions[Math.floor(seededRandom() * directions.length)];
 			} else if (this.weightCache) {
 				dir = this.getDirOnWeight(this.weightCache);
 			} else {
@@ -365,7 +389,7 @@ var startGame = function(seed, imageName) {
 
 			if (!match) {
 				this.attractDelay = nearest - (ATTRACTOR_RADIUS / 2);
-				return directions[Math.floor(Math.random() * directions.length)];
+				return directions[Math.floor(seededRandom() * directions.length)];
 			}
 
 			this.weightCache = weights;
@@ -380,7 +404,7 @@ var startGame = function(seed, imageName) {
 				totalWeight += weights[i];
 			}
 
-			var cutoff = random(totalWeight);
+			var cutoff = seededRandom() * totalWeight;
 			var sumWeight = 0;
 			var dir = -1;
 
@@ -405,7 +429,7 @@ var startGame = function(seed, imageName) {
 			if (other.color === this.color && other instanceof Agent &&
 					!this.isChild() && !other.isChild()) {
 				// Breed!
-				if (random(1) < BREED) {
+				if (seededRandom() < BREED) {
 					this.breed();
 				}
 			}
@@ -413,7 +437,7 @@ var startGame = function(seed, imageName) {
 
 		breed: function() {
 			this.lastBreed = 0;
-			var dir = directions[Math.floor(Math.random() * directions.length)];
+			var dir = directions[Math.floor(seededRandom() * directions.length)];
 			var childX = this.x + (dir.x * this.width);
 			var childY = this.y + (dir.y * this.height);
 			new Agent(this.color, childX, childY);
@@ -495,7 +519,7 @@ var startGame = function(seed, imageName) {
 	var deadPixels = createGraphics(width, height);
 	deadPixels.loadPixels();
 
-	var loadedImage = loadImage("mandrill.png");
+	var loadedImage = loadImage(imageName);
 
 	new Attractor(COLOR_A, 100, 100, REPEL);
 	new Attractor(COLOR_B, 20, 20, REPEL);
@@ -506,8 +530,8 @@ var startGame = function(seed, imageName) {
 	initAgents = function() {
 		for (var i = 0; i < d; i++) {
 			for (var j = 0; j < d; j++) {
-				if (random(1) < INITIAL_AGENTS) {
-					if (random(1) > .5) {
+				if (seededRandom() < INITIAL_AGENTS) {
+					if (seededRandom() > .5) {
 						new Agent(COLOR_A, i, j);
 					} else {
 						new Agent(COLOR_B, i, j);
