@@ -103,32 +103,35 @@ Array.prototype.slice.call(document.getElementsByTagName("button")).forEach(func
 		}
 	};
 });
+
+var initGame = function(gameState) {
+	// Inject Image and wait for it to load
+	var img = document.createElement("img");
+	img.id = "mandrill";
+	img.src = gameState.image;
+	img.onload = function() {
+		startGame(gameState, socket);
+	};
+
+	var canvas = document.getElementById("canvas");
+	canvas.parentNode.insertBefore(img, canvas.nextSibling);
+};
+
 window.onload = function() {
 	setupGUI(this);
 
-	var socket = io.connect('http://' + window.location.host);
+	if (typeof io === "undefined") {
+		initGame({
+			image: "mandrill.png",
+			seed: Math.random()
+		});
 
-	// Don't start game until gameConnect occurs
-	socket.on('gameConnect', function (data) {
-		// Inject Image and wait for it to load
-		var img = document.createElement("img");
-		img.id = "mandrill";
-		img.src = data.image;
-		img.onload = function() {
-			startGame(data.seed, data.image);
-		};
+	} else {
+		var socket = io.connect('http://' + window.location.host);
 
-		var canvas = document.getElementById("canvas");
-		canvas.parentNode.insertBefore(img, canvas.nextSibling);
-	});
-
-	// Handle error connecting
-	// Run things on state
-	// Emit state when attractors are placed
-	// Show scores on done event
-	// Add button to click to start/join a new game
-	// Send in score after timer duration end.
-	// Have agents die of stagnant at random times
+		// Don't start game until gameConnect occurs
+		socket.on('gameConnect', initGame);
+	}
 };
 
 // Create a random number generator
@@ -152,13 +155,11 @@ var seededRandom = function() {
 	return gameSeed / 0x10000000;
 };
 
-var startGame = function(seed, imageName) {
+var startGame = function(gameState, socket) {
 	// Seed the random number generator
-	gameSeed = seed;
+	gameSeed = gameState.seed;
 
 	with(sketch) {
-
-
 
 	var directions = [
 		{ x: -1, y: -1 },
@@ -505,7 +506,7 @@ var startGame = function(seed, imageName) {
 	var deadPixels = createGraphics(width, height);
 	deadPixels.loadPixels();
 
-	var loadedImage = loadImage(imageName);
+	var loadedImage = loadImage(gameState.image);
 
 	new Attractor(COLOR_A, 100, 100, REPEL);
 	new Attractor(COLOR_B, 20, 20, REPEL);
@@ -527,6 +528,7 @@ var startGame = function(seed, imageName) {
 			}
 		}
 	}
+
 	initAgents();
 
 	var PIXEL_CHECK = 10000;
@@ -571,6 +573,7 @@ var startGame = function(seed, imageName) {
 
 		scoreSpan.innerHTML = (100 * (sum / totalScores)).toFixed(1) + "%";
 	};
+
 	drawCursor = function() {
 		if (ATTRACTOR_COLOR == 0) {
 			fill(COLOR_B);
@@ -584,27 +587,6 @@ var startGame = function(seed, imageName) {
 			rect(mx - 3, my - 10, 6, 20);
 		}
 	};
-
-	size(d, d);
-
-	loadPixels();
-
-	var deadPixels = createGraphics(width, height);
-	deadPixels.loadPixels();
-
-	var loadedImage = loadImage(imageName);
-
-	new Attractor(color(0, 0, 0), 100, 100, ATTRACT);
-	new Attractor(color(0, 0, 0), 20, 20, ATTRACT);
-	new Attractor(color(0, 0, 0), 170, 150, ATTRACT);
-
-	initAgents();
-
-	var PIXEL_CHECK = 10000;
-
-	var curPos = 0;
-	var score = 0;
-	var scores = {};
 
 	draw = function() {
 		background(0, 0, 0);
@@ -642,6 +624,30 @@ var startGame = function(seed, imageName) {
 			new Attractor(c, floor(mouseX * scaleFactor), floor(mouseY * scaleFactor), ATTRACTOR_MODE);
 		}
 	};
+
+	// Handle error connecting
+	socket.on('error', function(data) {
+		// TODO: Let them know when to reconnect
+		alert(data.msg);
+	});
+
+	// Run things on state
+	socket.on('state', function(data) {
+		// TODO: Let them know when to reconnect
+		alert(data.msg);
+	});
+
+	if (gameState.duration) {
+		setTimeout(function() {
+			// TODO: Game Over
+		}, gameState.duration);
+	}
+
+	// Emit state when attractors are placed
+	// Show scores on done event
+	// Add button to click to start/join a new game
+	// Send in score after timer duration end.
+	// Have agents die of stagnant at random times
 
 	sketch.loop();
 }
