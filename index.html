@@ -15,10 +15,14 @@
 		border: 2px solid #000;
 		image-rendering: -webkit-optimize-contrast;
 	}
-	img {
+	img.main {
 		width: 600px;
 		height: 600px;
 		image-rendering: -webkit-optimize-contrast;
+	}
+	#score-table img {
+		width: 100px;
+		height: 100px;
 	}
 	#score {
 		font-weight: bold;
@@ -76,7 +80,8 @@
 		<p>Waiting for other players to finish...</p>
 	</div>
 	<div class="scores">
-		<p>[[[ SCORE TABLE ]]]</p>
+		<h2>Scores:</h2>
+		<table id="score-table"></table>
 		<form action="" class="startover">
 			<input type="submit" value="New Game"/>
 		</form>
@@ -160,6 +165,7 @@ Array.prototype.slice.call(document.getElementsByTagName("button")).forEach(func
 var initGame = function(gameState, socket) {
 	// Inject Image and wait for it to load
 	var img = document.createElement("img");
+	img.className = "main";
 	img.id = "mandrill";
 	img.src = gameState.image;
 	img.onload = function() {
@@ -641,13 +647,13 @@ var startGame = function(gameState, socket) {
 
 	initAgents();
 
-	var PIXEL_CHECK = 10000;
+	var PIXEL_CHECK = d * d; //10000;
 
 	var curPos = 0;
 	var score = 0;
 	var scores = {};
 
-	var compareImage = function() {
+	var compareImage = function(callback) {
 		if (!imageData || !imageData.getPixel) {
 			loadedImage.loadPixels();
 			imageData = loadedImage.pixels;
@@ -681,7 +687,8 @@ var startGame = function(gameState, socket) {
 			totalScores += 1;
 		}
 
-		scoreSpan.innerHTML = (100 * (sum / totalScores)).toFixed(1) + "%";
+		//scoreSpan.innerHTML = (100 * (sum / totalScores)).toFixed(1) + "%";
+		callback(100 * (sum / totalScores));
 	};
 
 	var gameOver = function() {
@@ -692,9 +699,12 @@ var startGame = function(gameState, socket) {
 
 		// Send in scores on done event
 		if (socket) {
-			socket.emit("done", {
-				image: gameState.image,
-				score: 0
+			// Calculate score on game over
+			compareImage(function(score) {
+				socket.emit("done", {
+					image: gameState.image,
+					score: score
+				});
 			});
 		}
 
@@ -742,9 +752,6 @@ var startGame = function(gameState, socket) {
 	draw = function() {
 		fill(0, 0, 0, 18);
 		rect(0, 0, width, height);
-
-		// TODO: Do this at the end
-		//compareImage();
 
 		step += 1;
 
@@ -853,9 +860,18 @@ var startGame = function(gameState, socket) {
 		socket.on('scores', function(data) {
 			$("div.overwait").hide();
 			$("div.scores").show();
-			
+
+			var scores = data.scores;
+			var lines = [];
+
 			// TODO: Show Scores
-			// Calculate score on game over
+			for (var i = 0, l = scores.length; i < l; i++) {
+				lines.push("<tr><td><img src='" + scores[i].image +
+					"'/></td><th>" + scores[i].score.toFixed(1) +
+					"%</th></tr>");
+			}
+
+			$("#score-table").html(lines.join(""));
 		});
 	}
 
