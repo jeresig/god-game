@@ -1,4 +1,7 @@
+<script src="jquery.js"></script>
 <script src="/socket.io/socket.io.js"></script>
+<script src="processing-1.4.1.js"></script>
+<script src="dat.gui.min.js"></script>
 <style type="text/css">
 	body {
 		font-family: "Helvetica Neue", Arial, Helvetica, sans-serif;
@@ -38,19 +41,36 @@
 		color: rgba(34, 185, 191, 255);
 	}
 	p {
+		/*display: none;*/
+	}
+	
+	#game {
+		display: none;
+	}
+	
+	div.waiting {
 		display: none;
 	}
 </style>
-<div style="position:fixed;top:0" >
-<button class = "blue" id = "ba">B+</button>
-<button class = "blue" id = "br">B-</button>
-<button class = "red" id = "ra">R+</button>
-<button class = "red" id = "rr">R-</button>
+<div id="join">
+	<form action="" class="join">
+		<p>[[ Explanation of the game and how to play it....]]</p>
+		<input type="submit" value="Join Game"/>
+	</form>
+	<div class="waiting">
+		<p>Waiting <span id="waittime">15</span>s for another player to join...</p>
+	</div>
 </div>
-<canvas id="canvas" width="200" height="200" ></canvas>
-<p>Score: <span id = "score">0</span></p>
-<script src="processing-1.4.1.js"></script>
-<script src="dat.gui.min.js"></script>
+<div id="game">
+	<div style="position:fixed;top:0" >
+	<button class = "blue" id = "ba">B+</button>
+	<button class = "blue" id = "br">B-</button>
+	<button class = "red" id = "ra">R+</button>
+	<button class = "red" id = "rr">R-</button>
+	</div>
+	<canvas id="canvas" width="200" height="200" ></canvas>
+	<p>Score: <span id = "score">0</span></p>
+</div>
 <script>
 var d = 200;
 var BREED = .3;
@@ -134,8 +154,13 @@ var initGame = function(gameState, socket) {
 		startGame(gameState, socket);
 	};
 
-	var canvas = document.getElementById("canvas");
-	canvas.parentNode.insertBefore(img, canvas.nextSibling);
+	$("#canvas").after(img);
+
+	$("form.join").show();
+	$("div.waiting").hide();
+
+	$("#join").hide();
+	$("#game").show();
 };
 
 window.onload = function() {
@@ -149,12 +174,49 @@ window.onload = function() {
 
 	} else {
 		var socket = io.connect('http://' + window.location.host);
+		var gameState;
+		var gameWait;
 
 		// Don't start game until gameConnect occurs
-		socket.on('gameConnect', function(gameState) {
+		socket.on('gameConnect', function(data) {
+			gameState = data;
+
+			$("form.join").hide();
+			$("div.waiting").show();
+
+			var totalTime = 15;
+
+			gameWait = setInterval(function() {
+				totalTime -= 1;
+
+				$("#waittime").text(totalTime);
+
+				if (totalTime <= 0) {
+					// Force the game to start
+					socket.emit("gameStart");
+				}
+			}, 1000);
+		});
+
+		// Don't start game until gameStart occurs
+		socket.on('gameStart', function() {
+			if (gameWait) {
+				clearTimeout(gameWait);
+				$("#waittime").text(15);
+			}
 			initGame(gameState, socket);
 		});
 	}
+
+	$("form.join").submit(function() {
+		if (socket) {
+			socket.emit("joinGame");
+		} else {
+			initGame();
+		}
+
+		return false;
+	});
 };
 
 // Create a random number generator

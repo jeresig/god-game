@@ -54,9 +54,11 @@ var addPlayer = function(game, socket) {
 };
 
 var gameDone = function(socket) {
-	// When all clients are done, a final score is sent and shown
-	socket.emit('scores', { scores: game.scores })
-	socket.broadcast.emit('scores', { scores: game.scores });
+	if (curGame) {
+		// When all clients are done, a final score is sent and shown
+		socket.emit('scores', { scores: curGame.scores })
+		socket.broadcast.emit('scores', { scores: curGame.scores });
+	}
 
 	// When all are done, shut down game and close connections
 	curGame = null;
@@ -70,10 +72,28 @@ var gameStateLog = function() {
 	console.log("# Players: " + curGame.players.length);
 };
 
-io.sockets.on('connection', function (socket) {
+var startGame = function(socket) {
+	// Broadcast to all when a new game has been initialized
+	if (curGame && !curGame.started) {
+		socket.emit('gameStart');
+		socket.broadcast.emit('gameStart');
+		curGame.started = true;
+	}
+};
+
+var connectGame = function(socket) {
 	// If no one is connected to a game, start a game
 	if (!curGame) {
 		createGame();
+	}
+
+	// Don't let players join if game is already in progress
+	if (curGame.started) {
+		//    Tell them to wait a while for a new game
+		socket.emit('error', {
+			msg: "Game has already started. Please try again."
+		});
+		return;
 	}
 
 	// If a game exists, connect people to that game
@@ -90,11 +110,27 @@ io.sockets.on('connection', function (socket) {
 		console.log("Player connected: " + image);
 		gameStateLog();
 
+		if (curGame.players.length > 1) {
+			startGame(socket);
+		}
+
 	} else {
 		socket.emit('error', {
 			msg: "Game full. Try again later!"
 		});
 	}
+};
+
+io.sockets.on('connection', function (socket) {
+	// Received when the user times out after 15s
+	socket.on('joinGame', function() {
+		connectGame(socket);
+	});
+
+	// Received when the user times out after 15s
+	socket.on('gameStart', function() {
+		startGame(socket);
+	});
 
 	// Re-broadcast game state to other players
 	socket.on('state', function(data) {
@@ -130,9 +166,7 @@ io.sockets.on('connection', function (socket) {
 	});
 
 	// TODO:
-	// Don't let players join if game is already in progress
-	//    Tell them to wait a while for a new game
-	// Broadcast to all when a new game has been initialized
+	
 	// Start a new game when all players have left a game
 	// High Score Board
 });
