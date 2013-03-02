@@ -44,16 +44,8 @@
 		background-color: rgba(34, 185, 191, .2);
 		color: rgba(34, 185, 191, 255);
 	}
-<<<<<<< HEAD
-
-	#game {
-=======
-	p {
-		/*display: none;*/
-	}
 
 	#game, #gameover {
->>>>>>> f74a9b63d1991ec67c98221db4ec2f486f0a429c
 		display: none;
 	}
 
@@ -84,7 +76,7 @@
 	}
 </style>
 
-<div id="join"><b
+<div id="join">
 	<form action="" class="join">
 		<h1>God Game</h1>
 		<p>Play god and influence your pixels to carry out your master plan. But remember: you can lead your flock to water, but you can't make them drink. Besides, you're not the only god out there&hellip;</p><br/>
@@ -96,21 +88,21 @@
 </div>
 <div id="game">
 	<span class = "pip" id = "pip1"></span>
-<span class = "pip" id = "pip2"></span>
-<span class = "pip" id = "pip3"></span>
-<span class = "pip" id = "pip4"></span>
-<span class = "pip" id = "pip5"></span>
-<span class = "pip" id = "pip6"></span>
-<span class = "pip" id = "pip7"></span>
-<span class = "pip" id = "pip8"></span>
+	<span class = "pip" id = "pip2"></span>
+	<span class = "pip" id = "pip3"></span>
+	<span class = "pip" id = "pip4"></span>
+	<span class = "pip" id = "pip5"></span>
+	<span class = "pip" id = "pip6"></span>
+	<span class = "pip" id = "pip7"></span>
+	<span class = "pip" id = "pip8"></span>
 
-<h1>God game</h1>
-<div id = "buttons" >
-<button class = "blue" id = "ba">B+ [1]</button>
-<button class = "blue" id = "br">B- [2]</button>
-<button class = "red" id = "ra">R+ [3]</button>
-<button class = "red" id = "rr">R- [4]</button>
-</div>
+	<h1>God game</h1>
+	<div id = "buttons" >
+		<button class = "blue" id = "ba">B+ [1]</button>
+		<button class = "blue" id = "br">B- [2]</button>
+		<button class = "red" id = "ra">R+ [3]</button>
+		<button class = "red" id = "rr">R- [4]</button>
+	</div>
 	<canvas id="canvas" width="200" height="200" ></canvas>
 	<p>Score: <span id = "score">0</span></p>
 </div>
@@ -154,12 +146,9 @@ var attractorCooldown = 0;
 var MAX_ATTRACTOR_COOLDOWN = 30;
 var currentPip = 0;
 var newestAttractor;
-<<<<<<< HEAD
 var gameDuration;
 var gameStartTime;
-=======
 var JOIN_WAIT = 15;
->>>>>>> f74a9b63d1991ec67c98221db4ec2f486f0a429c
 
 var gameSeed = 0;
 
@@ -934,20 +923,11 @@ var startGame = function(gameState, socket) {
 		});
 	}
 
-<<<<<<< HEAD
-
 	if (gameState.duration) {
 		gameDuration = gameState.duration;
-		setTimeout(function() {
-
-=======
-	var gameTimer;
-
-	if (gameState.duration) {
 		// Send in score after timer duration end.
 		gameTimer = setTimeout(function() {
 			gameOver();
->>>>>>> f74a9b63d1991ec67c98221db4ec2f486f0a429c
 		}, gameState.duration);
 	}
 
