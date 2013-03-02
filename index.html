@@ -73,12 +73,17 @@ var scaleFactor = d/600; //600 hardcoded since it's in the CSS
 var COLOR_A, COLOR_B;
 var imageData;
 var scoreSpan = document.getElementById("score");
+var canPlaceAttractor = true;
+var attractorCooldown = 0;
+var MAX_ATTRACTOR_COOLDOWN = 30;
+var newestAttractor;
 
 var gameSeed = 0;
 
 var sketch = new Processing("canvas");
 
 var setupGUI = function(parent) {
+	return;
 	var gui = new dat.GUI();
 	gui.add(parent, "BREED", 0, 1);
 	gui.add(parent, "ATTRACTOR_RADIUS", 10, 120);
@@ -591,12 +596,26 @@ var startGame = function(seed, imageName) {
 		} else {
 			fill(COLOR_A);
 		}
-		var mx = floor(mouseX * scaleFactor);
-		var my = floor(mouseY * scaleFactor)
-		rect(mx - 10, my - 3, 20, 6);
-		if (ATTRACTOR_MODE == ATTRACT) {
-			rect(mx - 3, my - 10, 6, 20);
+
+		var cursorScale = 1;
+		if (attractorCooldown > 0) {
+			var diffFromMiddle = Math.abs(attractorCooldown - MAX_ATTRACTOR_COOLDOWN * .5);
+			cursorScale = diffFromMiddle/(MAX_ATTRACTOR_COOLDOWN * .5);
+			console.log(cursorScale);
 		}
+		rectMode(CENTER);
+
+		var mx = floor(mouseX * scaleFactor);
+		var my = floor(mouseY * scaleFactor);
+
+		var longSide = Math.round(20 * cursorScale);
+		var shortSide = Math.round(6 * cursorScale);
+
+		rect(mx, my, longSide, shortSide);
+		if (ATTRACTOR_MODE == ATTRACT) {
+			rect(mx, my, shortSide, longSide);
+		}
+		rectMode(CORNER);
 	};
 
 	size(d, d);
@@ -648,12 +667,18 @@ var startGame = function(seed, imageName) {
 		deadPixels.updatePixels();
 		image(deadPixels, 0, 0);
 		drawCursor();
+		if (attractorCooldown > 0) {
+			attractorCooldown--;
+		}
 	};
 
 	mousePressed = function() {
-		if (canPlaceAttractor) {
+		if (attractorCooldown <= 0) {
 			var c = ATTRACTOR_COLOR > 0 ? COLOR_A : COLOR_B;
-			new Attractor(c, floor(mouseX * scaleFactor), floor(mouseY * scaleFactor), ATTRACTOR_MODE);
+			newestAttractor = new Attractor(c, floor(mouseX * scaleFactor),
+			 														floor(mouseY * scaleFactor), ATTRACTOR_MODE);
+			attractorCooldown = MAX_ATTRACTOR_COOLDOWN;
+
 		}
 	};
 
