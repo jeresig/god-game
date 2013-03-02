@@ -104,7 +104,7 @@ Array.prototype.slice.call(document.getElementsByTagName("button")).forEach(func
 	};
 });
 
-var initGame = function(gameState) {
+var initGame = function(gameState, socket) {
 	// Inject Image and wait for it to load
 	var img = document.createElement("img");
 	img.id = "mandrill";
@@ -625,17 +625,19 @@ var startGame = function(gameState, socket) {
 		}
 	};
 
-	// Handle error connecting
-	socket.on('error', function(data) {
-		// TODO: Let them know when to reconnect
-		alert(data.msg);
-	});
+	if (socket) {
+		// Handle error connecting
+		socket.on('error', function(data) {
+			// TODO: Let them know when to reconnect
+			alert(data.msg);
+		});
 
-	// Run things on state
-	socket.on('state', function(data) {
-		// TODO: Let them know when to reconnect
-		alert(data.msg);
-	});
+		// Run things on state
+		socket.on('state', function(data) {
+			// TODO: Let them know when to reconnect
+			alert(data.msg);
+		});
+	}
 
 	if (gameState.duration) {
 		setTimeout(function() {
