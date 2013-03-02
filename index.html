@@ -34,7 +34,6 @@
 <button>R-</button>
 </div>
 <canvas id="canvas" width="200" height="200" ></canvas>
-<img src="mandrill.png" id = "mandrill"/>
 <p>Score: <span id = "score">0</span></p>
 <script src="processing-1.4.1.js"></script>
 <script src="dat.gui.min.js"></script>
@@ -113,13 +112,14 @@ window.onload = function() {
 	socket.on('gameConnect', function (data) {
 		// Inject Image and wait for it to load
 		var img = document.createElement("img");
+		img.id = "mandrill";
 		img.src = data.image;
 		img.onload = function() {
 			startGame(data.seed, data.image);
 		};
 
-		document.getElementById("game")
-			.insertBefore(img, document.getElementById("canvas").nextSibling);
+		var canvas = document.getElementById("canvas");
+		canvas.parentNode.insertBefore(img, canvas.nextSibling);
 	});
 
 	// Handle error connecting
@@ -505,7 +505,7 @@ var startGame = function(seed, imageName) {
 	var deadPixels = createGraphics(width, height);
 	deadPixels.loadPixels();
 
-	var loadedImage = loadImage("mandrill.png");
+	var loadedImage = loadImage(imageName);
 
 	new Attractor(COLOR_A, 100, 100, REPEL);
 	new Attractor(COLOR_B, 20, 20, REPEL);
