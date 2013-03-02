@@ -76,6 +76,8 @@
 	}
 	#join img {
 		display: inline-block;
+	.error {
+		display: none;
 	}
 </style>
 
@@ -88,6 +90,7 @@
 		<p>Drop manna from heaven and fire from the sky to match the image.</p>
 <br/>
 		<input type="submit" value="Join Game"/>
+		<p class="error"></p>
 	</form>
 	<div class="waiting">
 		<p>Waiting <span id="waittime">15</span>s for another player to join...</p>
@@ -213,6 +216,8 @@ var initGame = function(gameState, socket) {
 		startGame(gameState, socket);
 	};
 
+	$(".error").hide();
+
 	$("#canvas").after(img);
 
 	$("form.join").show();
@@ -265,6 +270,12 @@ window.onload = function() {
 				$("#waittime").text(JOIN_WAIT);
 			}
 			initGame(gameState, socket);
+		});
+
+		// Handle error connecting
+		socket.on('error', function(data) {
+			// TODO: Let them know when to reconnect
+			$("p.error").text(data.msg).show();
 		});
 	}
 
@@ -899,12 +910,6 @@ var startGame = function(gameState, socket) {
 		}
 	}
 	if (socket) {
-		// Handle error connecting
-		socket.on('error', function(data) {
-			// TODO: Let them know when to reconnect
-			alert(data.msg);
-		});
-
 		// Run things on state
 		socket.on('state', function(data) {
 			if (data.attractor) {
