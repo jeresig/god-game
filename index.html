@@ -15,10 +15,14 @@
 		border: 2px solid #000;
 		image-rendering: -webkit-optimize-contrast;
 	}
-	img {
+	img.main {
 		width: 600px;
 		height: 600px;
 		image-rendering: -webkit-optimize-contrast;
+	}
+	#score-table img {
+		width: 100px;
+		height: 100px;
 	}
 	#score {
 		font-weight: bold;
@@ -40,8 +44,16 @@
 		background-color: rgba(34, 185, 191, .2);
 		color: rgba(34, 185, 191, 255);
 	}
+<<<<<<< HEAD
 
 	#game {
+=======
+	p {
+		/*display: none;*/
+	}
+
+	#game, #gameover {
+>>>>>>> f74a9b63d1991ec67c98221db4ec2f486f0a429c
 		display: none;
 	}
 
@@ -101,6 +113,19 @@
 </div>
 	<canvas id="canvas" width="200" height="200" ></canvas>
 	<p>Score: <span id = "score">0</span></p>
+</div>
+<div id="gameover">
+	<div class="overwait">
+		<p>Waiting for other players to finish...</p>
+	</div>
+	<div class="scores">
+		<h2>Scores:</h2>
+		<table id="score-table"></table>
+		<form action="" class="startover">
+			<input type="submit" value="New Game"/>
+		</form>
+	</div>
+</div>
 <script>
 var d = 200;
 var BREED = .3;
@@ -129,8 +154,12 @@ var attractorCooldown = 0;
 var MAX_ATTRACTOR_COOLDOWN = 30;
 var currentPip = 0;
 var newestAttractor;
+<<<<<<< HEAD
 var gameDuration;
 var gameStartTime;
+=======
+var JOIN_WAIT = 15;
+>>>>>>> f74a9b63d1991ec67c98221db4ec2f486f0a429c
 
 var gameSeed = 0;
 
@@ -181,6 +210,7 @@ Array.prototype.slice.call(document.getElementsByTagName("button")).forEach(func
 var initGame = function(gameState, socket) {
 	// Inject Image and wait for it to load
 	var img = document.createElement("img");
+	img.className = "main";
 	img.id = "mandrill";
 	img.src = gameState.image;
 	img.onload = function() {
@@ -217,7 +247,7 @@ window.onload = function() {
 			$("form.join").hide();
 			$("div.waiting").show();
 
-			var totalTime = 15;
+			var totalTime = JOIN_WAIT;
 
 			gameWait = setInterval(function() {
 				totalTime -= 1;
@@ -235,18 +265,31 @@ window.onload = function() {
 		socket.on('gameStart', function() {
 			if (gameWait) {
 				clearTimeout(gameWait);
-				$("#waittime").text(15);
+				gameWait = null;
+				$("#waittime").text(JOIN_WAIT);
 			}
 			initGame(gameState, socket);
 		});
 	}
 
+	// Add button to click to start/join a new game
 	$("form.join").submit(function() {
 		if (socket) {
 			socket.emit("joinGame");
 		} else {
 			initGame();
 		}
+
+		return false;
+	});
+
+	// Dump players back to join screen on game over
+	$("form.startover").submit(function() {
+		$("div.scores").hide();
+		$("div.overwait").show();
+
+		$("#gameover").hide();
+		$("#join").show();
 
 		return false;
 	});
@@ -661,13 +704,13 @@ var startGame = function(gameState, socket) {
 
 	initAgents();
 
-	var PIXEL_CHECK = 10000;
+	var PIXEL_CHECK = d * d; //10000;
 
 	var curPos = 0;
 	var score = 0;
 	var scores = {};
 
-	var compareImage = function() {
+	var compareImage = function(callback) {
 		if (!imageData || !imageData.getPixel) {
 			loadedImage.loadPixels();
 			imageData = loadedImage.pixels;
@@ -701,7 +744,33 @@ var startGame = function(gameState, socket) {
 			totalScores += 1;
 		}
 
-		scoreSpan.innerHTML = (100 * (sum / totalScores)).toFixed(1) + "%";
+		//scoreSpan.innerHTML = (100 * (sum / totalScores)).toFixed(1) + "%";
+		callback(100 * (sum / totalScores));
+	};
+
+	var gameOver = function() {
+		if (gameTimer) {
+			clearTimeout(gameTimer);
+			gameTimer = null;
+		}
+
+		// Send in scores on done event
+		if (socket) {
+			// Calculate score on game over
+			compareImage(function(score) {
+				socket.emit("done", {
+					image: gameState.image,
+					score: score
+				});
+			});
+		}
+
+		sketch.noLoop();
+
+		$("#game").hide();
+		$("#gameover").show();
+		$("div.overwait").show();
+		$("div.scores").hide();
 	};
 
 	drawCursor = function() {
@@ -742,9 +811,6 @@ var startGame = function(gameState, socket) {
 		fill(0, 0, 0, 18);
 		rect(0, 0, width, height);
 
-		// TODO: Do this at the end
-		//compareImage();
-
 		step += 1;
 
 		if (DRAW_ATTRACTORS) {
@@ -779,6 +845,8 @@ var startGame = function(gameState, socket) {
 			try {
 				updatePixels();
 			} catch(e) {}
+		} else {
+			gameOver();
 		}
 
 		deadPixels.updatePixels();
@@ -847,20 +915,42 @@ var startGame = function(gameState, socket) {
 				addAttractor(data.attractor);
 			}
 		});
+
+		socket.on('scores', function(data) {
+			$("div.overwait").hide();
+			$("div.scores").show();
+
+			var scores = data.scores;
+			var lines = [];
+
+			// TODO: Show Scores
+			for (var i = 0, l = scores.length; i < l; i++) {
+				lines.push("<tr><td><img src='" + scores[i].image +
+					"'/></td><th>" + scores[i].score.toFixed(1) +
+					"%</th></tr>");
+			}
+
+			$("#score-table").html(lines.join(""));
+		});
 	}
 
+<<<<<<< HEAD
 
 	if (gameState.duration) {
 		gameDuration = gameState.duration;
 		setTimeout(function() {
 
+=======
+	var gameTimer;
+
+	if (gameState.duration) {
+		// Send in score after timer duration end.
+		gameTimer = setTimeout(function() {
+			gameOver();
+>>>>>>> f74a9b63d1991ec67c98221db4ec2f486f0a429c
 		}, gameState.duration);
 	}
 
-	// Calculate score on game over
-	// Show scores on done event
-	// Add button to click to start/join a new game
-	// Send in score after timer duration end.
 	// Have agents die of stagnant at random times
 	// TODO: High Score Board
 
