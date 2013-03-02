@@ -150,7 +150,9 @@ window.onload = function() {
 		var socket = io.connect('http://' + window.location.host);
 
 		// Don't start game until gameConnect occurs
-		socket.on('gameConnect', initGame);
+		socket.on('gameConnect', function(gameState) {
+			initGame(gameState, socket);
+		});
 	}
 };
 
@@ -176,6 +178,7 @@ var seededRandom = function() {
 };
 
 var startGame = function(gameState, socket) {
+	console.log("startGame", gameState, socket);
 	// Seed the random number generator
 	gameSeed = gameState.seed;
 
@@ -615,7 +618,7 @@ var startGame = function(gameState, socket) {
 		if (attractorCooldown > 0) {
 			var diffFromMiddle = Math.abs(attractorCooldown - MAX_ATTRACTOR_COOLDOWN * .5);
 			cursorScale = diffFromMiddle/(MAX_ATTRACTOR_COOLDOWN * .5);
-			console.log(cursorScale);
+			//console.log(cursorScale);
 		}
 		rectMode(CENTER);
 
@@ -665,13 +668,28 @@ var startGame = function(gameState, socket) {
 		}
 	};
 
+	var addAttractor = function(data) {
+		newestAttractor = new Attractor(data.color,
+			floor(data.x * scaleFactor),
+			floor(data.y * scaleFactor), data.mode);
+	};
+
 	mousePressed = function() {
 		if (attractorCooldown <= 0) {
-			var c = ATTRACTOR_COLOR > 0 ? COLOR_A : COLOR_B;
-			newestAttractor = new Attractor(c, floor(mouseX * scaleFactor),
-			 														floor(mouseY * scaleFactor), ATTRACTOR_MODE);
+			var data = {
+				x: mouseX,
+				y: mouseY,
+				color: ATTRACTOR_COLOR > 0 ? COLOR_A : COLOR_B,
+				mode: ATTRACTOR_MODE
+			};
+
+			addAttractor(data);
 			attractorCooldown = MAX_ATTRACTOR_COOLDOWN;
 
+			if (socket) {
+				// Emit state when attractors are placed
+				socket.emit("state", { attractor: data });
+			}
 		}
 	};
 
@@ -703,8 +721,9 @@ var startGame = function(gameState, socket) {
 
 		// Run things on state
 		socket.on('state', function(data) {
-			// TODO: Let them know when to reconnect
-			alert(data.msg);
+			if (data.attractor) {
+				addAttractor(data.attractor);
+			}
 		});
 	}
 
@@ -714,11 +733,11 @@ var startGame = function(gameState, socket) {
 		}, gameState.duration);
 	}
 
-	// Emit state when attractors are placed
 	// Show scores on done event
 	// Add button to click to start/join a new game
 	// Send in score after timer duration end.
 	// Have agents die of stagnant at random times
+	// TODO: High Score Board
 
 	sketch.loop();
 }

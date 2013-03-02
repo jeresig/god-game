@@ -1,7 +1,8 @@
 var express = require('express')
   , app = express()
   , server = require('http').createServer(app)
-  , io = require('socket.io').listen(server);
+  , io = require('socket.io').listen(server)
+  , fs = require("fs");
 
 server.listen(4521);
 
@@ -11,7 +12,7 @@ app.get('/', function (req, res) {
   res.sendfile(__dirname + '/index.html');
 });
 
-var images = ["mandrill.png", "mandrill.png"];
+var images = fs.readDirSync("images/")
 var gameDuration = 90 * 1000;
 var curGame;
 
@@ -123,4 +124,11 @@ io.sockets.on('connection', function (socket) {
 		console.log("Player disconnected.");
 		gameStateLog();
 	});
+
+	// TODO:
+	// Don't let players join if game is already in progress
+	//    Tell them to wait a while for a new game
+	// Broadcast to all when a new game has been initialized
+	// Start a new game when all players have left a game
+	// High Score Board
 });
