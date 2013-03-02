@@ -68,7 +68,8 @@ var ATTRACTOR_MODE = ATTRACT;
 var ATTRACTOR_COLOR = 0;
 var grid = [];
 var agents = [];
-var attractors = [];
+var attractors = {};
+var attractorGrids = {};
 var scaleFactor = d/600; //600 hardcoded since it's in the CSS
 var COLOR_A, COLOR_B;
 var imageData;
@@ -100,7 +101,8 @@ var setupGUI = function(parent) {
 var switchAttractorMode = function(mode, color) {
 	ATTRACTOR_MODE = mode;
 	ATTRACTOR_COLOR = color;
-}
+};
+
 Array.prototype.slice.call(document.getElementsByTagName("button")).forEach(function(button) {
 	button.onclick = function() {
 		switch(button.innerHTML) {
@@ -122,7 +124,6 @@ Array.prototype.slice.call(document.getElementsByTagName("button")).forEach(func
 		}
 	};
 });
-
 
 var initGame = function(gameState, socket) {
 	// Inject Image and wait for it to load
@@ -200,28 +201,6 @@ var startGame = function(gameState, socket) {
 	COLOR_A = color(191, 40, 34);//"#bf2822";
 	COLOR_B = color(34, 185, 191);//"#22b9bf";
 
-	var atPixel = function(x, y) {
-		return grid[(x * width) + y];
-	};
-
-	var atGrid = function(obj) {
-		var startX = obj.x - floor(obj.width / 2);
-		var endX = obj.x + floor(obj.width / 2);
-		var startY = obj.y - floor(obj.height / 2);
-		var endY = obj.y + floor(obj.height / 2);
-
-		for (var x = startX; x <= endX; x++) {
-			for (var y = startY; y <= endY; y++) {
-				var pos = (x * width) + y;
-				if (grid[pos] && grid[pos] !== obj) {
-					return grid[pos];
-				}
-			}
-		}
-
-		return false;
-	};
-
 	var addGrid = function(obj, doKill) {
 		var startX = obj.x - floor(obj.width / 2);
 		var endX = obj.x + floor(obj.width / 2);
@@ -266,7 +245,7 @@ var startGame = function(gameState, socket) {
 		this.lastMove = 0;
 		this.dead = false;
 
-		if (!atPixel(x, y)) {
+		if (!grid[(x * width) + y]) {
 			addGrid(this);
 			agents.push(this);
 		}
@@ -304,19 +283,18 @@ var startGame = function(gameState, socket) {
 
 		move: function() {
 			var dir = null;
+			var colorAttractors = attractors[this.color];
 
-			if (this.attractDelay > 0) {
+			if (!colorAttractors.length || this.attractDelay > 0) {
 				dir = directions[Math.floor(seededRandom() * directions.length)];
 			} else if (this.weightCache) {
 				dir = this.getDirOnWeight(this.weightCache);
 			} else {
-				dir = this.attract();
+				dir = this.attract(colorAttractors);
 			}
 
 			var x = this.x + dir.x;
 			var y = this.y + dir.y;
-			//this.x += dir.x; // * (floor(this.width / 2) || 1);
-			//this.y += dir.y; // * (floor(this.height / 2) || 1);
 
 			if (x < 0) {
 				x += width;
@@ -330,7 +308,7 @@ var startGame = function(gameState, socket) {
 				y -= height;
 			}
 
-			var obj = atPixel(x, y);
+			var obj = grid[(x * width) + y];
 
 			if (!obj) {
 				removeGrid(this);
@@ -347,25 +325,26 @@ var startGame = function(gameState, socket) {
 				this.lastMove += 1;
 			}
 
-			if (this.isDead() || this.isInfertile() || this.isStagnant()) {
+			if (this.age % 10 === 0 && 
+					(this.isDead() || this.isInfertile() || this.isStagnant())) {
 				this.kill();
 			}
 		},
 
-		attract: function() {
+		attract: function(colorAttractors) {
 			var weights = [1, 1, 1, 1, 1, 1, 1, 1];
 			var agent = this;
 			var nearest = width;
 			var match = false;
 
-			for (var i = 0, l = attractors.length; i < l; i++) {
-				var attractor = attractors[i];
+			for (var i = 0, l = colorAttractors.length; i < l; i++) {
+				var attractor = colorAttractors[i];
 				if (attractor.color === agent.color) {
 					var dist_agent = dist(agent.x, agent.y, attractor.x, attractor.y);
 					if (dist_agent < ATTRACTOR_RADIUS) {
 						var diffX = attractor.x - agent.x;
 						var diffY = attractor.y - agent.y;
-	          var weight = ATTRACTOR_RADIUS * (1 / attractor.strength) *
+						var weight = ATTRACTOR_RADIUS * (1 / attractor.strength) *
 							attractor.weight();
 						var xWeight = (ATTRACTOR_RADIUS - diffX) / weight;
 						var yWeight = (ATTRACTOR_RADIUS - diffY) / weight;
@@ -475,7 +454,7 @@ var startGame = function(gameState, socket) {
 		this.age = 0;
 
 		addGrid(this, true);
-		attractors.push(this);
+		attractors[color].push(this);
 	};
 
 	Attractor.prototype = {
@@ -492,8 +471,8 @@ var startGame = function(gameState, socket) {
 			removeGrid(this);
 
 			// Remove agent from the list
-			var pos = attractors.indexOf(this);
-			attractors.splice(pos, 1);
+			var pos = attractors[this.color].indexOf(this);
+			attractors[this.color].splice(pos, 1);
 		},
 
 		weight: function() {
@@ -542,10 +521,14 @@ var startGame = function(gameState, socket) {
 
 	var loadedImage = loadImage(gameState.image);
 
+	attractors[COLOR_A] = [];
+	attractors[COLOR_B] = [];
+	attractorGrids[COLOR_A] = [];
+	attractorGrids[COLOR_B] = [];
+
 	new Attractor(COLOR_A, 100, 100, REPEL);
 	new Attractor(COLOR_B, 20, 20, REPEL);
 	new Attractor(COLOR_A, 170, 150, REPEL);
-
 
 	initAgents = function() {
 		for (var i = 0; i < d; i++) {
@@ -635,14 +618,37 @@ var startGame = function(gameState, socket) {
 		rectMode(CORNER);
 	};
 
+	var updateGrid = function(color) {
+		var grid = [];
+		var colorAttractors = attractors[color];
+
+		for (var i = 0, l = colorAttractors.length; i < l; i++) {
+		}
+		
+		attractorGrids[color] = grid;
+	};
+
+	var step = 0;
+
 	draw = function() {
 		background(0, 0, 0);
 		// TODO: Do this at the end
 		//compareImage();
+
+		if (step % 10 === 0) {
+			updateGrid(COLOR_A);
+			updateGrid(COLOR_B);
+		}
+
+		step += 1;
+
 		if (DRAW_ATTRACTORS) {
-			for (var i = 0, l = attractors.length; i < l; i++) {
-				if (attractors[i]) {
-					attractors[i].draw();
+			for (var color in attractors) {
+				var items = attractors[color];
+				for (var i = 0, l = items.length; i < l; i++) {
+					if (items[i]) {
+						items[i].draw();
+					}
 				}
 			}
 		}
