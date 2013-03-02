@@ -6,14 +6,18 @@ var express = require('express')
 
 server.listen(4521);
 
+var gameDuration = 90 * 1000;
+var imageDir = "images/";
+
 app.use(express.static(__dirname + '/'));
 
 app.get('/', function (req, res) {
   res.sendfile(__dirname + '/index.html');
 });
 
-var images = fs.readDirSync("images/")
-var gameDuration = 90 * 1000;
+var images = fs.readdirSync(imageDir).map(function(file) {
+	return imageDir + file;
+});
 var curGame;
 
 var createGame = function() {

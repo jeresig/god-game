@@ -637,7 +637,8 @@ var startGame = function(gameState, socket) {
 
 	draw = function() {
 		background(0, 0, 0);
-		compareImage();
+		// TODO: Do this at the end
+		//compareImage();
 		if (DRAW_ATTRACTORS) {
 			for (var i = 0, l = attractors.length; i < l; i++) {
 				if (attractors[i]) {
