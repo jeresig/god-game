@@ -6,7 +6,7 @@ var express = require('express')
 
 server.listen(4521);
 
-var gameDuration = 90 * 1000;
+var gameDuration = 60 * 1000;
 var imageDir = "images/";
 
 app.use(express.static(__dirname + '/'));
@@ -36,7 +36,7 @@ var addPlayer = function(game, socket) {
 	//    Make sure that the image isn't the same as another player's
 	var image;
 	var imagePos = game.unusedImages[
-		Math.floor(game.seed * game.unusedImages.length)];
+		Math.floor(Math.random() * game.unusedImages.length)];
 
 	// No slots left!
 	if (imagePos < 0) {

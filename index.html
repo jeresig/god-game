@@ -362,7 +362,11 @@ var seededRandom = function() {
 };
 
 var startGame = function(gameState, socket) {
-	console.log("startGame", gameState, socket);
+	grid = [];
+	agents = [];
+	attractors = {};
+	attractorGrids = {};
+
 	// Seed the random number generator
 	gameSeed = gameState.seed;
 	gameStartTime = new Date();
