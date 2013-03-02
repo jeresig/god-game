@@ -22,16 +22,30 @@
 		color: #ed145b;
 	}
 
+	button {
+		width: 50px;
+		height: 50px;
+		-webkit-border-radius: 25px;
+		-moz-border-radius: 25px;
+		border: none;
+	}
+	.red {
+		background-color: rgba(191, 40, 34, .2);
+		color: rgba(191, 40, 34, 255);
+	}
+	.blue {
+		background-color: rgba(34, 185, 191, .2);
+		color: rgba(34, 185, 191, 255);
+	}
 	p {
 		display: none;
 	}
 </style>
-<h1>God Game</h1>
 <div style="position:fixed;top:0" >
-<button>B+</button>
-<button>B-</button>
-<button>R+</button>
-<button>R-</button>
+<button class = "blue" id = "ba">B+</button>
+<button class = "blue" id = "br">B-</button>
+<button class = "red" id = "ra">R+</button>
+<button class = "red" id = "rr">R-</button>
 </div>
 <canvas id="canvas" width="200" height="200" ></canvas>
 <img src="mandrill.png" id = "mandrill"/>
