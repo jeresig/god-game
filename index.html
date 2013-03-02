@@ -1,4 +1,7 @@
+<script src="jquery.js"></script>
 <script src="/socket.io/socket.io.js"></script>
+<script src="processing-1.4.1.js"></script>
+<script src="dat.gui.min.js"></script>
 <style type="text/css">
 	body {
 		font-family: Futura, "Helvetica Neue", Arial, Helvetica, sans-serif;
@@ -37,7 +40,12 @@
 		background-color: rgba(34, 185, 191, .2);
 		color: rgba(34, 185, 191, 255);
 	}
-	p {
+
+	#game {
+		display: none;
+	}
+
+	div.waiting {
 		display: none;
 	}
 	h1 {
@@ -63,7 +71,19 @@
 		background-color: #fff;
 	}
 </style>
-<span class = "pip" id = "pip1"></span>
+
+<div id="join"><b
+	<form action="" class="join">
+		<h1>God Game</h1>
+		<p>Play god and influence your pixels to carry out your master plan. But remember: you can lead your flock to water, but you can't make them drink. Besides, you're not the only god out there&hellip;</p><br/>
+		<input type="submit" value="Join Game"/>
+	</form>
+	<div class="waiting">
+		<p>Waiting <span id="waittime">15</span>s for another player to join...</p>
+	</div>
+</div>
+<div id="game">
+	<span class = "pip" id = "pip1"></span>
 <span class = "pip" id = "pip2"></span>
 <span class = "pip" id = "pip3"></span>
 <span class = "pip" id = "pip4"></span>
@@ -79,10 +99,8 @@
 <button class = "red" id = "ra">R+ [3]</button>
 <button class = "red" id = "rr">R- [4]</button>
 </div>
-<canvas id="canvas" width="200" height="200" ></canvas>
-<p>Score: <span id = "score">0</span></p>
-<script src="processing-1.4.1.js"></script>
-<script src="dat.gui.min.js"></script>
+	<canvas id="canvas" width="200" height="200" ></canvas>
+	<p>Score: <span id = "score">0</span></p>
 <script>
 var d = 200;
 var BREED = .3;
@@ -169,8 +187,13 @@ var initGame = function(gameState, socket) {
 		startGame(gameState, socket);
 	};
 
-	var canvas = document.getElementById("canvas");
-	canvas.parentNode.insertBefore(img, canvas.nextSibling);
+	$("#canvas").after(img);
+
+	$("form.join").show();
+	$("div.waiting").hide();
+
+	$("#join").hide();
+	$("#game").show();
 };
 
 window.onload = function() {
@@ -184,12 +207,49 @@ window.onload = function() {
 
 	} else {
 		var socket = io.connect('http://' + window.location.host);
+		var gameState;
+		var gameWait;
 
 		// Don't start game until gameConnect occurs
-		socket.on('gameConnect', function(gameState) {
+		socket.on('gameConnect', function(data) {
+			gameState = data;
+
+			$("form.join").hide();
+			$("div.waiting").show();
+
+			var totalTime = 15;
+
+			gameWait = setInterval(function() {
+				totalTime -= 1;
+
+				$("#waittime").text(totalTime);
+
+				if (totalTime <= 0) {
+					// Force the game to start
+					socket.emit("gameStart");
+				}
+			}, 1000);
+		});
+
+		// Don't start game until gameStart occurs
+		socket.on('gameStart', function() {
+			if (gameWait) {
+				clearTimeout(gameWait);
+				$("#waittime").text(15);
+			}
 			initGame(gameState, socket);
 		});
 	}
+
+	$("form.join").submit(function() {
+		if (socket) {
+			socket.emit("joinGame");
+		} else {
+			initGame();
+		}
+
+		return false;
+	});
 };
 var resetPips = function() {
 	currentPip = 0;
@@ -359,20 +419,27 @@ var startGame = function(gameState, socket) {
 				y -= height;
 			}
 
-			var obj = grid[(x * width) + y];
+			var newPos = (x * width) + y;
+			var other = grid[newPos];
 
-			if (!obj) {
-				removeGrid(this);
+			if (!other) {
+				grid[(this.x * width) + this.y] = null;
 				this.x = x;
 				this.y = y;
-				addGrid(this);
+				grid[newPos] = this;
 				this.lastMove = 0;
 				this.attractDelay -= 1;
 				this.weightCache = null;
 
 			} else {
 				// Handle Collision
-				this.collision(obj);
+				if (other.color === this.color && other instanceof Agent &&
+						!this.isChild() && !other.isChild() && !other.isDead()) {
+					// Breed!
+					if (seededRandom() < BREED) {
+						this.breed();
+					}
+				}
 				this.lastMove += 1;
 			}
 
@@ -553,7 +620,7 @@ var startGame = function(gameState, socket) {
 			}
 			this.age += 1;
 			noStroke();
-			fill(this.color, 42 * this.weight());
+			fill(this.color, 10 * this.weight());
 			ellipse(this.x, this.y, radius, radius);
 			fill(this.color, 255);
 			rect(this.x - 3, this.y - 1, 6, 2);
@@ -666,27 +733,17 @@ var startGame = function(gameState, socket) {
 		rectMode(CORNER);
 	};
 
-	var updateGrid = function(color) {
-		var grid = [];
-		var colorAttractors = attractors[color];
-
-		for (var i = 0, l = colorAttractors.length; i < l; i++) {
-		}
-
-		attractorGrids[color] = grid;
-	};
-
 	var step = 0;
 
+	var curAgentPos = 0;
+	var agentStep = 2000;
+
 	draw = function() {
-		background(0, 0, 0);
+		fill(0, 0, 0, 18);
+		rect(0, 0, width, height);
+
 		// TODO: Do this at the end
 		//compareImage();
-
-		if (step % 10 === 0) {
-			updateGrid(COLOR_A);
-			updateGrid(COLOR_B);
-		}
 
 		step += 1;
 
@@ -701,12 +758,21 @@ var startGame = function(gameState, socket) {
 			}
 		}
 
-		for (var i = 0, l = agents.length; i < l; i++) {
+		for (var i = curAgentPos,
+				l = Math.min(agents.length, i + agentStep); i < l; i++) {
 			var agent = agents[i];
 			if (agent) {
 				agent.move();
-				agent.draw();
+				//if (agent.dead) {
+					agent.draw();
+				//}
 			}
+		}
+
+		curAgentPos += agentStep;
+
+		if (curAgentPos >= agents.length) {
+			curAgentPos = 0;
 		}
 
 		if (agents.length) {
@@ -791,6 +857,7 @@ var startGame = function(gameState, socket) {
 		}, gameState.duration);
 	}
 
+	// Calculate score on game over
 	// Show scores on done event
 	// Add button to click to start/join a new game
 	// Send in score after timer duration end.
