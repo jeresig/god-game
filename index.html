@@ -28,8 +28,10 @@
 		font-weight: bold;
 		color: #ed145b;
 	}
-
-	button {
+	#buttons {
+		float: left;
+	}
+	#buttons button {
 		width: 70px;
 		height: 70px;
 		-webkit-border-radius: 35px;
@@ -44,11 +46,13 @@
 		background-color: rgba(34, 185, 191, .2);
 		color: rgba(34, 185, 191, 255);
 	}
-
+	.top {
+		text-align: center;
+		overflow: hidden;
+	}
 	#game, #gameover {
 		display: none;
 	}
-
 	div.waiting {
 		display: none;
 	}
@@ -66,7 +70,7 @@
 		text-align: center;
 	}
 	.pip {
-		width: 12%;
+		width: 11%;
 		height: 10px;
 		border: 1px solid #fff;
 		display: inline-block;
@@ -74,22 +78,37 @@
 	.pip.on {
 		background-color: #fff;
 	}
-	#join img {
-		display: inline-block;
 	.error {
 		display: none;
+		color: red;
+	}
+	.submit {
+		font-size: 48px;
 	}
 </style>
 
 <div id="join">
 	<form action="" class="join">
+		<div style="float: left;">
+		<div><center><img src="gifs/ba.gif"><br/>
+			Dropping blue manna from heaven (attracts blue people).</center></div>
+		<div><center><img src="gifs/br.gif"><br/>
+			Dropping red fire from the sky (scares red people).</center></div>
+		</div>
 		<h1>God Game</h1>
-		<p>Play god and influence your pixels to carry out your master plan. But remember: you can lead your flock to water, but you can't make them drink. Besides, you're not the only god out there&hellip;</p><br/>
-		<img src="gifs/ba.gif">
-		<img src="gifs/br.gif">
-		<p>Drop manna from heaven and fire from the sky to match the image.</p>
-<br/>
-		<input type="submit" value="Join Game"/>
+		<p>Play god and influence your people to carry out your master plan; the them to arrange in a pattern similar to your image.
+			But remember: you can lead your flock to water, but you can't make them drink.
+			Besides, you're not the only god out there&hellip;</p>
+		<p>Influence your people to get them to form a pattern similar to your master plan:</p>
+		<center><img src="images/a.png" style="width:50px;height:50px;"/>
+			<img src="images/b.png" style="width:50px;height:50px;"/>
+			<img src="images/c.png" style="width:50px;height:50px;"/>
+			<img src="images/d.png" style="width:50px;height:50px;"/>
+			<img src="images/e.png" style="width:50px;height:50px;"/>
+			<img src="images/f.png" style="width:50px;height:50px;"/>
+			<img src="images/g.png" style="width:50px;height:50px;"/></center>
+		<p>Whichever god influences their people to organize the best, wins!</p>
+		<center><button type="submit" class="submit">Join Game</button></center>
 		<p class="error"></p>
 	</form>
 	<div class="waiting">
@@ -106,15 +125,17 @@
 	<span class = "pip" id = "pip7"></span>
 	<span class = "pip" id = "pip8"></span>
 
-	<h1>God game</h1>
-	<div id = "buttons" >
-		<button class = "blue" id = "ba">B+ [1]</button>
-		<button class = "blue" id = "br">B- [2]</button>
-		<button class = "red" id = "ra">R+ [3]</button>
-		<button class = "red" id = "rr">R- [4]</button>
+	<div class="top">
+		<div id = "buttons" >
+			<button class = "blue" id = "ba">B+ [1]</button>
+			<button class = "blue" id = "br">B- [2]</button>
+			<button class = "red" id = "ra">R+ [3]</button>
+			<button class = "red" id = "rr">R- [4]</button>
+		</div>
+	
+		<h1>God game</h1>
 	</div>
 	<canvas id="canvas" width="200" height="200" ></canvas>
-	<p>Score: <span id = "score">0</span></p>
 </div>
 <div id="gameover">
 	<div class="overwait">
@@ -124,7 +145,7 @@
 		<h2>Scores:</h2>
 		<table id="score-table"></table>
 		<form action="" class="startover">
-			<input type="submit" value="New Game"/>
+			<input type="submit" value="New Game" class="submit"/>
 		</form>
 	</div>
 </div>
@@ -218,6 +239,7 @@ var initGame = function(gameState, socket) {
 
 	$(".error").hide();
 
+	$("#game img.main").remove();
 	$("#canvas").after(img);
 
 	$("form.join").show();
