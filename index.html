@@ -22,16 +22,30 @@
 		color: #ed145b;
 	}
 
+	button {
+		width: 50px;
+		height: 50px;
+		-webkit-border-radius: 25px;
+		-moz-border-radius: 25px;
+		border: none;
+	}
+	.red {
+		background-color: rgba(191, 40, 34, .2);
+		color: rgba(191, 40, 34, 255);
+	}
+	.blue {
+		background-color: rgba(34, 185, 191, .2);
+		color: rgba(34, 185, 191, 255);
+	}
 	p {
 		display: none;
 	}
 </style>
-<h1>God Game</h1>
 <div style="position:fixed;top:0" >
-<button>B+</button>
-<button>B-</button>
-<button>R+</button>
-<button>R-</button>
+<button class = "blue" id = "ba">B+</button>
+<button class = "blue" id = "br">B-</button>
+<button class = "red" id = "ra">R+</button>
+<button class = "red" id = "rr">R-</button>
 </div>
 <canvas id="canvas" width="200" height="200" ></canvas>
 <p>Score: <span id = "score">0</span></p>
@@ -59,12 +73,17 @@ var scaleFactor = d/600; //600 hardcoded since it's in the CSS
 var COLOR_A, COLOR_B;
 var imageData;
 var scoreSpan = document.getElementById("score");
+var canPlaceAttractor = true;
+var attractorCooldown = 0;
+var MAX_ATTRACTOR_COOLDOWN = 30;
+var newestAttractor;
 
 var gameSeed = 0;
 
 var sketch = new Processing("canvas");
 
 var setupGUI = function(parent) {
+	return;
 	var gui = new dat.GUI();
 	gui.add(parent, "BREED", 0, 1);
 	gui.add(parent, "ATTRACTOR_RADIUS", 10, 120);
@@ -582,12 +601,26 @@ var startGame = function(gameState, socket) {
 		} else {
 			fill(COLOR_A);
 		}
-		var mx = floor(mouseX * scaleFactor);
-		var my = floor(mouseY * scaleFactor)
-		rect(mx - 10, my - 3, 20, 6);
-		if (ATTRACTOR_MODE == ATTRACT) {
-			rect(mx - 3, my - 10, 6, 20);
+
+		var cursorScale = 1;
+		if (attractorCooldown > 0) {
+			var diffFromMiddle = Math.abs(attractorCooldown - MAX_ATTRACTOR_COOLDOWN * .5);
+			cursorScale = diffFromMiddle/(MAX_ATTRACTOR_COOLDOWN * .5);
+			console.log(cursorScale);
 		}
+		rectMode(CENTER);
+
+		var mx = floor(mouseX * scaleFactor);
+		var my = floor(mouseY * scaleFactor);
+
+		var longSide = Math.round(20 * cursorScale);
+		var shortSide = Math.round(6 * cursorScale);
+
+		rect(mx, my, longSide, shortSide);
+		if (ATTRACTOR_MODE == ATTRACT) {
+			rect(mx, my, shortSide, longSide);
+		}
+		rectMode(CORNER);
 	};
 
 	draw = function() {
@@ -618,12 +651,18 @@ var startGame = function(gameState, socket) {
 		deadPixels.updatePixels();
 		image(deadPixels, 0, 0);
 		drawCursor();
+		if (attractorCooldown > 0) {
+			attractorCooldown--;
+		}
 	};
 
 	mousePressed = function() {
-		if (canPlaceAttractor) {
+		if (attractorCooldown <= 0) {
 			var c = ATTRACTOR_COLOR > 0 ? COLOR_A : COLOR_B;
-			new Attractor(c, floor(mouseX * scaleFactor), floor(mouseY * scaleFactor), ATTRACTOR_MODE);
+			newestAttractor = new Attractor(c, floor(mouseX * scaleFactor),
+			 														floor(mouseY * scaleFactor), ATTRACTOR_MODE);
+			attractorCooldown = MAX_ATTRACTOR_COOLDOWN;
+
 		}
 	};
 
