@@ -2,18 +2,39 @@
 <style type="text/css">
 	body {
 		font-family: "Helvetica Neue", Arial, Helvetica, sans-serif;
+		background-color: #000;
+		color: #fff;
 	}
 	canvas {
 		outline: none;
+		width: 600px;
+		height: 600px;
 		border: 2px solid #000;
+		image-rendering: -webkit-optimize-contrast;
+	}
+	img {
+		width: 600px;
+		height: 600px;
+		image-rendering: -webkit-optimize-contrast;
 	}
 	#score {
 		font-weight: bold;
 		color: #ed145b;
 	}
+
+	p {
+		display: none;
+	}
 </style>
-<canvas id="canvas" width="200" height="200"></canvas>
-<img src="mandrill.png">
+<h1>God Game</h1>
+<div style="position:fixed;top:0" >
+<button>B+</button>
+<button>B-</button>
+<button>R+</button>
+<button>R-</button>
+</div>
+<canvas id="canvas" width="200" height="200" ></canvas>
+<img src="mandrill.png" id = "mandrill"/>
 <p>Score: <span id = "score">0</span></p>
 <script src="processing-1.4.1.js"></script>
 <script src="http://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.5/dat.gui.min.js"></script>
@@ -31,10 +52,12 @@ var LAST_MOVE = 30;
 var INITIAL_AGENTS = .005;
 var DRAW_ATTRACTORS = true;
 var ATTRACTOR_MODE = ATTRACT;
+var ATTRACTOR_COLOR = 0;
 var grid = [];
 var agents = [];
 var attractors = [];
-
+var scaleFactor = d/600; //600 hardcoded since it's in the CSS
+var COLOR_A, COLOR_B;
 var imageData;
 var scoreSpan = document.getElementById("score");
 
@@ -53,11 +76,39 @@ var setupGUI = function(parent) {
 	gui.add(parent, "LAST_MOVE", 20, 100);
 	gui.add(parent, "DRAW_ATTRACTORS");
 }
+Array.prototype.slice.call(document.getElementsByTagName("button")).forEach(function(button) {
+	button.onclick = function() {
+		switch(button.innerHTML) {
+			case "B+":
+				ATTRACTOR_MODE = ATTRACT;
+				ATTRACTOR_COLOR = 0;
+				break;
+			case "B-":
+				ATTRACTOR_MODE = REPEL;
+				ATTRACTOR_COLOR = 0;
 
+				break;
+			case "R+":
+				ATTRACTOR_MODE = ATTRACT;
+				ATTRACTOR_COLOR = 1;
+				break;
+			case "R-":
+				ATTRACTOR_MODE = REPEL;
+				ATTRACTOR_COLOR = 1;
+				break;
+			default:
+				break;
+				//pass
+		}
+	};
+});
 window.onload = function() {
 	setupGUI(this);
 
 	with(sketch) {
+	size(d, d);
+
+
 
 	var directions = [
 		{ x: -1, y: -1 },
@@ -72,6 +123,8 @@ window.onload = function() {
 		{ x: 0, y: 1 },
 		{ x: 1, y: 1 }
 	];
+	COLOR_A = color(191, 40, 34);//"#bf2822";
+	COLOR_B = color(34, 185, 191);//"#22b9bf";
 
 	var atPixel = function(x, y) {
 		return grid[(x * width) + y];
@@ -238,7 +291,7 @@ window.onload = function() {
 					if (dist_agent < ATTRACTOR_RADIUS) {
 						var diffX = attractor.x - agent.x;
 						var diffY = attractor.y - agent.y;
-						var weight = ATTRACTOR_RADIUS * (1 / attractor.strength) *
+	          var weight = ATTRACTOR_RADIUS * (1 / attractor.strength) *
 							attractor.weight();
 						var xWeight = (ATTRACTOR_RADIUS - diffX) / weight;
 						var yWeight = (ATTRACTOR_RADIUS - diffY) / weight;
@@ -289,7 +342,7 @@ window.onload = function() {
 
 			var cutoff = random(totalWeight);
 			var sumWeight = 0;
-			var dir = 0;
+			var dir = -1;
 
 			for (var i = 0, l = weights.length; i < l; i++) {
 				sumWeight += weights[i];
@@ -299,6 +352,10 @@ window.onload = function() {
 					break;
 				}
 			}
+			if (dir == -1) {
+				dir = floor(random(8));
+			}
+
 
 			return directions[dir];
 		},
@@ -382,19 +439,17 @@ window.onload = function() {
 			}
 
 			this.age += 1;
-			if (this.strength == ATTRACT) {
-				stroke(0, 0, 0, 42);
-			} else {
-				stroke(255, 0, 0, 42);
-			}
+			noStroke();
 			fill(this.color, 42 * this.weight());
 			ellipse(this.x, this.y, ATTRACTOR_RADIUS * 2, ATTRACTOR_RADIUS * 2);
-			fill(this.color, 128 * this.weight());
-			ellipse(this.x, this.y, this.width, this.height);
+			fill(this.color, 255);
+			rect(this.x - 3, this.y - 1, 6, 2);
+			if (this.strength == ATTRACT) {
+				rect(this.x - 1, this.y - 3, 2, 6);
+			}
 		},
 	};
 
-	size(d, d);
 
 	loadPixels();
 
@@ -403,9 +458,9 @@ window.onload = function() {
 
 	var loadedImage = loadImage("mandrill.png");
 
-	new Attractor(color(0, 0, 0), 100, 100, ATTRACT);
-	new Attractor(color(255, 0, 0), 20, 20, ATTRACT);
-	new Attractor(color(0, 0, 0), 170, 150, ATTRACT);
+	new Attractor(COLOR_A, 100, 100, REPEL);
+	new Attractor(COLOR_B, 20, 20, REPEL);
+	new Attractor(COLOR_A, 170, 150, REPEL);
 
 	// new Attractor(color(0, 0, 0), 100, 80, REPEL);
 
@@ -414,9 +469,9 @@ window.onload = function() {
 			for (var j = 0; j < d; j++) {
 				if (random(1) < INITIAL_AGENTS) {
 					if (random(1) > .5) {
-						new Agent(color(0, 0, 0), i, j);
+						new Agent(COLOR_A, i, j);
 					} else {
-						new Agent(color(255, 0, 0), i, j);
+						new Agent(COLOR_B, i, j);
 					}
 
 				}
@@ -468,8 +523,21 @@ window.onload = function() {
 		scoreSpan.innerHTML = (100 * (sum / totalScores)).toFixed(1) + "%";
 
 	};
+	drawCursor = function() {
+		if (ATTRACTOR_COLOR == 0) {
+			fill(COLOR_B);
+		} else {
+			fill(COLOR_A);
+		}
+		var mx = floor(mouseX * scaleFactor);
+		var my = floor(mouseY * scaleFactor)
+		rect(mx - 10, my - 3, 20, 6);
+		if (ATTRACTOR_MODE == ATTRACT) {
+			rect(mx - 3, my - 10, 6, 20);
+		}
+	};
 	draw = function() {
-		background(255, 255, 255);
+		background(0, 0, 0);
 		compareImage();
 		if (DRAW_ATTRACTORS) {
 			for (var i = 0, l = attractors.length; i < l; i++) {
@@ -495,20 +563,15 @@ window.onload = function() {
 
 		deadPixels.updatePixels();
 		image(deadPixels, 0, 0);
+		drawCursor();
 	};
 
 	mousePressed = function() {
-		new Attractor(color(0, 0, 0), mouseX, mouseY, ATTRACTOR_MODE);
-	};
-	keyPressed = function() {
-		if (key == 120) {
-			if (ATTRACTOR_MODE == REPEL) {
-				ATTRACTOR_MODE = ATTRACT;
-			} else {
-				ATTRACTOR_MODE = REPEL;
-			}
+		if (canPlaceAttractor) {
+			var c = ATTRACTOR_COLOR > 0 ? COLOR_A : COLOR_B;
+			new Attractor(c, floor(mouseX * scaleFactor), floor(mouseY * scaleFactor), ATTRACTOR_MODE);
 		}
-	}
+	};
 
 	sketch.loop();
 }
