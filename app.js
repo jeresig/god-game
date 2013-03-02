@@ -35,14 +35,12 @@ var addPlayer = function(game, socket) {
 	//    Give them an image to work off of
 	//    Make sure that the image isn't the same as another player's
 	var image;
-	var imagePos = game.unusedImages[
+	var image = game.unusedImages[
 		Math.floor(Math.random() * game.unusedImages.length)];
 
 	// No slots left!
-	if (imagePos < 0) {
+	if (!image) {
 		return false;
-	} else {
-		image = game.unusedImages.splice(imagePos, 1)[0];
 	}
 
 	game.players.push({

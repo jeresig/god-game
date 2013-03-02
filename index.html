@@ -145,7 +145,7 @@
 		<h2>Scores:</h2>
 		<table id="score-table"></table>
 		<form action="" class="startover">
-			<input type="submit" value="New Game" class="submit"/>
+			<button type="submit" class="submit">New Game</button>
 		</form>
 	</div>
 </div>
@@ -608,7 +608,6 @@ var startGame = function(gameState, socket) {
 		},
 
 		collision: function(other) {
-			//console.log("Collision", other);
 			if (other.color === this.color && other instanceof Agent &&
 					!this.isChild() && !other.isChild()) {
 				// Breed!
@@ -743,7 +742,7 @@ var startGame = function(gameState, socket) {
 	var score = 0;
 	var scores = {};
 
-	var compareImage = function(callback) {
+	window.compareImage = function(callback) {
 		if (!imageData || !imageData.getPixel) {
 			loadedImage.loadPixels();
 			imageData = loadedImage.pixels;
@@ -756,8 +755,10 @@ var startGame = function(gameState, socket) {
 		for (var k = curPos; k < max; k++) {
 			var srcPixel = imageData.getPixel(k);
 			var hit = grid[k];
-			if (hit && srcPixel == hit.color) {
-				curScore += 1;
+			if (hit) {
+				if (red(srcPixel) == red(hit.color)) {
+					curScore += 1;
+				}
 			}
 		}
 
@@ -777,7 +778,6 @@ var startGame = function(gameState, socket) {
 			totalScores += 1;
 		}
 
-		//scoreSpan.innerHTML = (100 * (sum / totalScores)).toFixed(1) + "%";
 		callback(100 * (sum / totalScores));
 	};
 
@@ -818,7 +818,6 @@ var startGame = function(gameState, socket) {
 		if (attractorCooldown > 0) {
 			var diffFromMiddle = Math.abs(attractorCooldown - MAX_ATTRACTOR_COOLDOWN * .5);
 			cursorScale = diffFromMiddle/(MAX_ATTRACTOR_COOLDOWN * .5);
-			//console.log(cursorScale);
 		}
 		rectMode(CENTER);
 
