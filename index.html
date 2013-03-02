@@ -308,20 +308,27 @@ var startGame = function(gameState, socket) {
 				y -= height;
 			}
 
-			var obj = grid[(x * width) + y];
+			var newPos = (x * width) + y;
+			var other = grid[newPos];
 
-			if (!obj) {
-				removeGrid(this);
+			if (!other) {
+				grid[(this.x * width) + this.y] = null;
 				this.x = x;
 				this.y = y;
-				addGrid(this);
+				grid[newPos] = this;
 				this.lastMove = 0;
 				this.attractDelay -= 1;
 				this.weightCache = null;
 
 			} else {
 				// Handle Collision
-				this.collision(obj);
+				if (other.color === this.color && other instanceof Agent &&
+						!this.isChild() && !other.isChild() && !other.isDead()) {
+					// Breed!
+					if (seededRandom() < BREED) {
+						this.breed();
+					}
+				}
 				this.lastMove += 1;
 			}
 
@@ -618,27 +625,17 @@ var startGame = function(gameState, socket) {
 		rectMode(CORNER);
 	};
 
-	var updateGrid = function(color) {
-		var grid = [];
-		var colorAttractors = attractors[color];
-
-		for (var i = 0, l = colorAttractors.length; i < l; i++) {
-		}
-		
-		attractorGrids[color] = grid;
-	};
-
 	var step = 0;
 
+	var curAgentPos = 0;
+	var agentStep = 2000;
+
 	draw = function() {
-		background(0, 0, 0);
+		fill(0, 0, 0, 18);
+		rect(0, 0, width, height);
+
 		// TODO: Do this at the end
 		//compareImage();
-
-		if (step % 10 === 0) {
-			updateGrid(COLOR_A);
-			updateGrid(COLOR_B);
-		}
 
 		step += 1;
 
@@ -653,12 +650,21 @@ var startGame = function(gameState, socket) {
 			}
 		}
 
-		for (var i = 0, l = agents.length; i < l; i++) {
+		for (var i = curAgentPos,
+				l = Math.min(agents.length, i + agentStep); i < l; i++) {
 			var agent = agents[i];
 			if (agent) {
 				agent.move();
-				agent.draw();
+				//if (agent.dead) {
+					agent.draw();
+				//}
 			}
+		}
+
+		curAgentPos += agentStep;
+
+		if (curAgentPos >= agents.length) {
+			curAgentPos = 0;
 		}
 
 		if (agents.length) {
@@ -740,6 +746,7 @@ var startGame = function(gameState, socket) {
 		}, gameState.duration);
 	}
 
+	// Calculate score on game over
 	// Show scores on done event
 	// Add button to click to start/join a new game
 	// Send in score after timer duration end.
