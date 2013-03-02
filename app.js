@@ -91,7 +91,7 @@ var connectGame = function(socket) {
 	if (curGame.started) {
 		//    Tell them to wait a while for a new game
 		socket.emit('error', {
-			msg: "Game has already started. Please try again."
+			msg: "Game has already started. Please try connecting again in a minute."
 		});
 		return;
 	}
@@ -116,7 +116,7 @@ var connectGame = function(socket) {
 
 	} else {
 		socket.emit('error', {
-			msg: "Game full. Try again later!"
+			msg: "Game full. Try connecting again in a minute."
 		});
 	}
 };
@@ -139,6 +139,10 @@ io.sockets.on('connection', function (socket) {
 
 	// Give client a button to start a new game
 	socket.on('done', function (data) {
+		if (!curGame) {
+			return;
+		}
+
 		//    Client sends in their final score
 		curGame.scores.push(data);
 
@@ -160,6 +164,11 @@ io.sockets.on('connection', function (socket) {
 			}
 			return true;
 		});
+
+
+		if (curGame.players.length === 0) {
+			curGame = null;
+		}
 
 		console.log("Player disconnected.");
 		gameStateLog();

@@ -74,6 +74,9 @@
 	.pip.on {
 		background-color: #fff;
 	}
+	.error {
+		display: none;
+	}
 </style>
 
 <div id="join">
@@ -81,6 +84,7 @@
 		<h1>God Game</h1>
 		<p>Play god and influence your pixels to carry out your master plan. But remember: you can lead your flock to water, but you can't make them drink. Besides, you're not the only god out there&hellip;</p><br/>
 		<input type="submit" value="Join Game"/>
+		<p class="error"></p>
 	</form>
 	<div class="waiting">
 		<p>Waiting <span id="waittime">15</span>s for another player to join...</p>
@@ -206,6 +210,8 @@ var initGame = function(gameState, socket) {
 		startGame(gameState, socket);
 	};
 
+	$(".error").hide();
+
 	$("#canvas").after(img);
 
 	$("form.join").show();
@@ -258,6 +264,12 @@ window.onload = function() {
 				$("#waittime").text(JOIN_WAIT);
 			}
 			initGame(gameState, socket);
+		});
+
+		// Handle error connecting
+		socket.on('error', function(data) {
+			// TODO: Let them know when to reconnect
+			$("p.error").text(data.msg).show();
 		});
 	}
 
@@ -892,12 +904,6 @@ var startGame = function(gameState, socket) {
 		}
 	}
 	if (socket) {
-		// Handle error connecting
-		socket.on('error', function(data) {
-			// TODO: Let them know when to reconnect
-			alert(data.msg);
-		});
-
 		// Run things on state
 		socket.on('state', function(data) {
 			if (data.attractor) {
