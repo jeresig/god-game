@@ -1,7 +1,7 @@
 <script src="/socket.io/socket.io.js"></script>
 <style type="text/css">
 	body {
-		font-family: "Helvetica Neue", Arial, Helvetica, sans-serif;
+		font-family: Futura, "Helvetica Neue", Arial, Helvetica, sans-serif;
 		background-color: #000;
 		color: #fff;
 	}
@@ -23,10 +23,10 @@
 	}
 
 	button {
-		width: 50px;
-		height: 50px;
-		-webkit-border-radius: 25px;
-		-moz-border-radius: 25px;
+		width: 70px;
+		height: 70px;
+		-webkit-border-radius: 35px;
+		-moz-border-radius: 35px;
 		border: none;
 	}
 	.red {
@@ -40,12 +40,26 @@
 	p {
 		display: none;
 	}
+	h1 {
+		text-align: center;
+		font-size: 3em;
+		text-transform: uppercase;
+		font-weight: normal;
+		margin: 0;
+	}
+	#buttons {
+		padding: 1em;
+		top: 3em;
+		margin: 0 auto;
+		text-align: center;
+	}
 </style>
-<div style="position:fixed;top:0" >
-<button class = "blue" id = "ba">B+</button>
-<button class = "blue" id = "br">B-</button>
-<button class = "red" id = "ra">R+</button>
-<button class = "red" id = "rr">R-</button>
+<h1>God game</h1>
+<div id = "buttons" >
+<button class = "blue" id = "ba">B+ [1]</button>
+<button class = "blue" id = "br">B- [2]</button>
+<button class = "red" id = "ra">R+ [3]</button>
+<button class = "red" id = "rr">R- [4]</button>
 </div>
 <canvas id="canvas" width="200" height="200" ></canvas>
 <p>Score: <span id = "score">0</span></p>
@@ -204,23 +218,6 @@ var startGame = function(gameState, socket) {
 		return grid[(x * width) + y];
 	};
 
-	var atGrid = function(obj) {
-		var startX = obj.x - floor(obj.width / 2);
-		var endX = obj.x + floor(obj.width / 2);
-		var startY = obj.y - floor(obj.height / 2);
-		var endY = obj.y + floor(obj.height / 2);
-
-		for (var x = startX; x <= endX; x++) {
-			for (var y = startY; y <= endY; y++) {
-				var pos = (x * width) + y;
-				if (grid[pos] && grid[pos] !== obj) {
-					return grid[pos];
-				}
-			}
-		}
-
-		return false;
-	};
 
 	var addGrid = function(obj, doKill) {
 		var startX = obj.x - floor(obj.width / 2);
