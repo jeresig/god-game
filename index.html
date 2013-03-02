@@ -53,7 +53,25 @@
 		margin: 0 auto;
 		text-align: center;
 	}
+	.pip {
+		width: 12%;
+		height: 10px;
+		border: 1px solid #fff;
+		display: inline-block;
+	}
+	.pip.on {
+		background-color: #fff;
+	}
 </style>
+<span class = "pip" id = "pip1"></span>
+<span class = "pip" id = "pip2"></span>
+<span class = "pip" id = "pip3"></span>
+<span class = "pip" id = "pip4"></span>
+<span class = "pip" id = "pip5"></span>
+<span class = "pip" id = "pip6"></span>
+<span class = "pip" id = "pip7"></span>
+<span class = "pip" id = "pip8"></span>
+
 <h1>God game</h1>
 <div id = "buttons" >
 <button class = "blue" id = "ba">B+ [1]</button>
@@ -91,7 +109,10 @@ var scoreSpan = document.getElementById("score");
 var canPlaceAttractor = true;
 var attractorCooldown = 0;
 var MAX_ATTRACTOR_COOLDOWN = 30;
+var currentPip = 0;
 var newestAttractor;
+var gameDuration;
+var gameStartTime;
 
 var gameSeed = 0;
 
@@ -119,17 +140,17 @@ var switchAttractorMode = function(mode, color) {
 
 Array.prototype.slice.call(document.getElementsByTagName("button")).forEach(function(button) {
 	button.onclick = function() {
-		switch(button.innerHTML) {
-			case "B+":
+		switch(button.id) {
+			case "ba":
 				switchAttractorMode(ATTRACT, 0);
 				break;
-			case "B-":
+			case "br":
 				switchAttractorMode(REPEL, 0);
 				break;
-			case "R+":
+			case "ra":
 				switchAttractorMode(ATTRACT, 1);
 				break;
-			case "R-":
+			case "rr":
 				switchAttractorMode(REPEL, 1);
 				break;
 			default:
@@ -170,7 +191,23 @@ window.onload = function() {
 		});
 	}
 };
-
+var resetPips = function() {
+	currentPip = 0;
+	Array.prototype.slice.call(document.querySelectorAll(".pip.on")).forEach(function(pip) {
+		pip.className = "pip";
+	});
+}
+var checkPips = function() {
+	if (!gameDuration) {
+		return;
+	}
+	var progress = (new Date() - gameStartTime)/gameDuration;
+	var pip = Math.floor(progress * 8);
+	if (currentPip < pip) {
+		document.querySelector("#pip" + pip).className = "pip on";
+		currentPip = pip;
+	}
+}
 // Create a random number generator
 
 // A seeded random number generator for dropping random,
@@ -196,9 +233,9 @@ var startGame = function(gameState, socket) {
 	console.log("startGame", gameState, socket);
 	// Seed the random number generator
 	gameSeed = gameState.seed;
-
+	gameStartTime = new Date();
+	resetPips();
 	with(sketch) {
-	frameRate(30);
 	var directions = [
 		{ x: -1, y: -1 },
 		{ x: 0, y: -1 },
@@ -681,6 +718,7 @@ var startGame = function(gameState, socket) {
 		deadPixels.updatePixels();
 		image(deadPixels, 0, 0);
 		drawCursor();
+		checkPips();
 		if (attractorCooldown > 0) {
 			attractorCooldown--;
 		}
@@ -745,9 +783,11 @@ var startGame = function(gameState, socket) {
 		});
 	}
 
+
 	if (gameState.duration) {
+		gameDuration = gameState.duration;
 		setTimeout(function() {
-			// TODO: Game Over
+
 		}, gameState.duration);
 	}
 
