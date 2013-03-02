@@ -166,7 +166,5 @@ io.sockets.on('connection', function (socket) {
 	});
 
 	// TODO:
-	
-	// Start a new game when all players have left a game
 	// High Score Board
 });
