@@ -1,4 +1,4 @@
-
+<script src="/socket.io/socket.io.js"></script>
 <style type="text/css">
 	body {
 		font-family: "Helvetica Neue", Arial, Helvetica, sans-serif;
@@ -37,7 +37,7 @@
 <img src="mandrill.png" id = "mandrill"/>
 <p>Score: <span id = "score">0</span></p>
 <script src="processing-1.4.1.js"></script>
-<script src="http://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.5/dat.gui.min.js"></script>
+<script src="dat.gui.min.js"></script>
 <script>
 var d = 200;
 var BREED = .05;
@@ -105,8 +105,34 @@ Array.prototype.slice.call(document.getElementsByTagName("button")).forEach(func
 window.onload = function() {
 	setupGUI(this);
 
+	var socket = io.connect('http://' + window.location.host);
+
+	// Don't start game until gameConnect occurs
+	socket.on('gameConnect', function (data) {
+		var img = document.createElement("img");
+		img.src = data.image;
+		img.onload = function() {
+			startGame(data.seed, data.image);
+		};
+
+		document.getElementById("game")
+			.insertBefore(img, document.getElementById("canvas").nextSibling);
+	});
+
+	// Inject Image and wait for it to load
+
+	// Create a random number generator
+	// Seed the random number generator
+	// Handle error connecting
+	// Run things on state
+	// Emit state when attractors are placed
+	// Show scores on done event
+	// Add button to click to start/join a new game
+	// Send in score after timer duration end.
+};
+
+var startGame = function(seed, imageName) {
 	with(sketch) {
-	size(d, d);
 
 
 
@@ -450,7 +476,6 @@ window.onload = function() {
 		},
 	};
 
-
 	loadPixels();
 
 	var deadPixels = createGraphics(width, height);
@@ -486,7 +511,7 @@ window.onload = function() {
 	var score = 0;
 	var scores = {};
 
-	compareImage = function() {
+	var compareImage = function() {
 		if (!imageData || !imageData.getPixel) {
 			loadedImage.loadPixels();
 			imageData = loadedImage.pixels;
@@ -521,7 +546,6 @@ window.onload = function() {
 		}
 
 		scoreSpan.innerHTML = (100 * (sum / totalScores)).toFixed(1) + "%";
-
 	};
 	drawCursor = function() {
 		if (ATTRACTOR_COLOR == 0) {
@@ -536,6 +560,28 @@ window.onload = function() {
 			rect(mx - 3, my - 10, 6, 20);
 		}
 	};
+
+	size(d, d);
+
+	loadPixels();
+
+	var deadPixels = createGraphics(width, height);
+	deadPixels.loadPixels();
+
+	var loadedImage = loadImage(imageName);
+
+	new Attractor(color(0, 0, 0), 100, 100, ATTRACT);
+	new Attractor(color(0, 0, 0), 20, 20, ATTRACT);
+	new Attractor(color(0, 0, 0), 170, 150, ATTRACT);
+
+	initAgents();
+
+	var PIXEL_CHECK = 10000;
+
+	var curPos = 0;
+	var score = 0;
+	var scores = {};
+
 	draw = function() {
 		background(0, 0, 0);
 		compareImage();
