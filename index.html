@@ -190,7 +190,23 @@ var newestAttractor;
 var gameDuration;
 var gameStartTime;
 var JOIN_WAIT = 15;
-
+var imageChoices = [
+	"images/a.png",
+	"images/b.png",
+	"images/c.png",
+	"images/d.png",
+	"images/e.png",
+	"images/f.png",
+	"images/g.png",
+	"images/h.png",
+	"images/i.png",
+	"images/j.png",
+	"images/k.png",
+	"images/l.png",
+	"images/m.png",
+	"images/n.png",
+	"images/o.png"
+];
 var gameSeed = 0;
 
 var sketch = new Processing("canvas");
@@ -262,13 +278,7 @@ var initGame = function(gameState, socket) {
 window.onload = function() {
 	setupGUI(this);
 
-	if (typeof io === "undefined") {
-		initGame({
-			image: "mandrill.png",
-			seed: Math.random()
-		});
-
-	} else {
+	if (typeof io !== "undefined") {
 		var socket = io.connect('http://' + window.location.host);
 		var gameState;
 		var gameWait;
@@ -313,10 +323,15 @@ window.onload = function() {
 
 	// Add button to click to start/join a new game
 	$("form.join").submit(function() {
-		if (socket) {
+		if (typeof socket !== "undefined") {
 			socket.emit("joinGame");
 		} else {
-			initGame();
+			// We're playing a single-player game!
+			initGame({
+				image: imageChoices[Math.floor(Math.random() * imageChoices.length)],
+				seed: Math.random(),
+				duration: 60 * 1000
+			});
 		}
 
 		return false;
@@ -797,23 +812,51 @@ var startGame = function(gameState, socket) {
 			gameTimer = null;
 		}
 
-		// Send in scores on done event
-		if (socket) {
-			// Calculate score on game over
-			compareImage(function(score) {
-				socket.emit("done", {
-					image: gameState.image,
-					score: score
-				});
-			});
-		}
-
 		sketch.noLoop();
 
 		$("#game").hide();
 		$("#gameover").show();
 		$("div.overwait").show();
 		$("div.scores").hide();
+
+		// Send in scores on done event
+		// Calculate score on game over
+		compareImage(function(score) {
+			if (socket) {
+				socket.emit("done", {
+					image: gameState.image,
+					score: score
+				});
+
+			} else {
+				// Show scores for a single-player game
+				showScores({
+					scores: [
+						{
+							image: gameState.image,
+							score: score
+						}
+					]
+				});
+			}
+		});
+	};
+
+	var showScores = function(data) {
+		$("div.overwait").hide();
+		$("div.scores").show();
+
+		var scores = data.scores;
+		var lines = [];
+
+		// TODO: Show Scores
+		for (var i = 0, l = scores.length; i < l; i++) {
+			lines.push("<tr><td><img src='" + scores[i].image +
+				"'/></td><th>" + scores[i].score.toFixed(1) +
+				"%</th></tr>");
+		}
+
+		$("#score-table").html(lines.join(""));
 	};
 
 	drawCursor = function() {
@@ -944,6 +987,7 @@ var startGame = function(gameState, socket) {
 				//pass
 		}
 	}
+
 	if (socket) {
 		// Run things on state
 		socket.on('state', function(data) {
@@ -952,22 +996,7 @@ var startGame = function(gameState, socket) {
 			}
 		});
 
-		socket.on('scores', function(data) {
-			$("div.overwait").hide();
-			$("div.scores").show();
-
-			var scores = data.scores;
-			var lines = [];
-
-			// TODO: Show Scores
-			for (var i = 0, l = scores.length; i < l; i++) {
-				lines.push("<tr><td><img src='" + scores[i].image +
-					"'/></td><th>" + scores[i].score.toFixed(1) +
-					"%</th></tr>");
-			}
-
-			$("#score-table").html(lines.join(""));
-		});
+		socket.on('scores', showScores);
 	}
 
 	if (gameState.duration) {
