@@ -3,22 +3,16 @@
 <head>
 	<title>God Game - Art Hack Day 2013</title>
 	<link rel="stylesheet" href="style.css"/>
-	<script src="jquery.js"></script>
-	<script src="/socket.io/socket.io.js"></script>
-	<script src="processing-1.4.1.js"></script>
-	<script src="dat.gui.min.js"></script>
-	<script src="game.js"></script>
 </head>
 <body>
 	<div id="join">
-		<form action="" class="join" style="overflow:hidden;">
-			<div style="float: left;">
-				<div><center><img src="gifs/ba.gif"><br/>
-					Dropping blue manna from heaven (attracts blue people).</center></div>
-				<div><center><img src="gifs/br.gif"><br/>
-					Dropping red fire from the sky (scares red people).</center></div>
-			</div>
-			<div>
+		<div class="left-column">
+			<img src="gifs/ba.gif"><br/>
+			Dropping blue manna from heaven (attracts blue people).<br/>
+			<img src="gifs/br.gif"><br/>
+			Dropping red fire from the sky (scares red people).
+		</div>
+		<div class="right-column">
 			<h1>God Game</h1>
 			<p>Play god and influence your people to carry out your master plan; the them to arrange in a pattern similar to your image.
 				But remember: you can lead your flock to water, but you can't make them drink.
@@ -32,17 +26,23 @@
 				<img src="images/f.png" style="width:50px;height:50px;"/>
 				<img src="images/g.png" style="width:50px;height:50px;"/></center>
 			<p>Whichever god influences their people to organize the best, wins!</p>
-			<center><button type="submit" class="submit">Join Game</button></center>
+			<form action="" class="join">
+				<center><button type="submit" class="submit">Join Game</button></center>
+			</form>
 			<p class="error"></p>
+			<div class="scores">
+				<h2>Scores:</h2>
+				<table id="score-table"></table>
+			</div>
 			<p><strong>Credits:</strong><br/>
 			Leonard Grey (<a href="https://twitter.com/speednoise">@speednoise</a>) <a href="http://www.speednoisemovement.com/">http://www.speednoisemovement.com/</a><br/>
 			John Resig (<a href="https://twitter.com/jeresig">@jeresig</a>) <a href="http://ejohn.org/">http://ejohn.org/</a>
 			</p>
-			<p><strong>Code:</code> <a href="https://github.com/jeresig/god-game">https://github.com/jeresig/god-game</a></p>
+			<p><strong>Code:</strong> <a href="https://github.com/jeresig/god-game">https://github.com/jeresig/god-game</a></p>
 			</div>
-		</form>
-		<div class="waiting">
-			<p>Waiting <span id="waittime">15</span>s for another player to join...</p>
+			<div class="waiting">
+				<p>Waiting <span id="waittime">15</span>s for another player to join...</p>
+			</div>
 		</div>
 	</div>
 	<div id="game">
@@ -71,13 +71,12 @@
 		<div class="overwait">
 			<p>Waiting for other players to finish...</p>
 		</div>
-		<div class="scores">
-			<h2>Scores:</h2>
-			<table id="score-table"></table>
-			<form action="" class="startover">
-				<button type="submit" class="submit">New Game</button>
-			</form>
-		</div>
 	</div>
+
+	<script src="jquery.js"></script>
+	<script src="/socket.io/socket.io.js"></script>
+	<script src="processing-1.4.1.js"></script>
+	<script src="dat.gui.min.js"></script>
+	<script src="game.js"></script>
 </body>
 </html>

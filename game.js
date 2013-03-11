@@ -684,6 +684,9 @@ var startGame = function(gameState, socket) {
 		$("div.overwait").hide();
 		$("div.scores").show();
 
+		$("#gameover").hide();
+		$("#join").show();
+
 		var scores = data.scores;
 		var lines = [];
 

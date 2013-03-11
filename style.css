@@ -13,6 +13,14 @@ canvas {
 	border: 2px solid #000;
 	image-rendering: -webkit-optimize-contrast;
 }
+.left-column {
+	display: inline-block;
+	text-align: center;
+}
+.right-column {
+	display: inline-block;
+	width: 600px;
+}
 img.main {
 	width: 600px;
 	height: 600px;
@@ -49,6 +57,9 @@ img.main {
 	overflow: hidden;
 }
 #game, #gameover {
+	display: none;
+}
+.scores {
 	display: none;
 }
 div.waiting {
